@@ -1,13 +1,13 @@
 `include "QuadDecoder.v"
 `timescale 1ns / 1ps
 module QuadDecoder_tb;
-  reg clk, A, B;
-  wire led1;
+  reg clk, A, B, rst;
 
   QuadDecoder dut (
       .clk (clk),
       .A(A),
-      .B(B)
+      .B(B),
+      .rst(rst)
   );
 
   // generate input signals

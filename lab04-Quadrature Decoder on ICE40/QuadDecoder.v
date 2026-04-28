@@ -1,56 +1,54 @@
 module QuadDecoder (
-    input clk,
-    input A,
-    input B,
-
-    output reg signed [31:0] count = 0
+    input             clk,
+    input             A,
+    input             B,
+    input             rst,
+    output reg signed [31:0] count,
+    output reg               dir
 );
 
-  reg[1:0] state;
-  localparam S00=2'b00, S01=2'b01, S10=2'b10, S11=2'b11; // states
+    localparam S00 = 2'b00,
+               S01 = 2'b01,
+               S10 = 2'b10,
+               S11 = 2'b11;
 
-  always @ (posedge clk) // two-stage input synchronizer: A and B is from different clock domain
-    begin
-        sync <= {A,B};
-        AB <= sync;
+    reg [1:0] state = S00;
+    reg [1:0] sync  = 2'b00;
+    reg [1:0] AB    = 2'b00;
+
+    // Two-stage input synchronizer (A and B are in a different clock domain)
+    always @(posedge clk) begin
+        sync <= {A, B};
+        AB   <= sync;
     end
 
-  always @(posedge clk) // always block to compute output
-    begin 
-      if(reset) begin
-          state <= S00;
-          count <= 0;
-      end else
-        case(state)              
-            S00: if(AB == 2'b01) begin
-                    count <= count-1;
-                    state <= S01;
-                end else if(AB == 2'b10) begin
-                    count <= count+1;
-                    state <= S10;
-                end                                        
-            S01: if(AB == 2'b00) begin
-                    count <= count+1;
-                    state <= S00;
-                end else if(AB == 2'b11) begin
-                    count <= count-1;
-                    state <= S11;
-                end                      
-            S10: if(AB == 2'b00) begin
-                    count <= count-1;
-                    state <= S00;
-                end else if(AB == 2'b11) begin
-                    count <= count+1;
-                    state <= S11;
-                end                     
-            S11: if(AB == 2'b01) begin
-                    count <= count+1;
-                    state <= S01;
-                end else if(AB == 2'b10) begin
-                    count <= count-1;
-                    state <= S10;
+    // State machine: direction and count update
+    always @(posedge clk) begin
+        if (rst) begin
+            count <= 0;
+            state <= S00;
+            dir   <= 1'b0;
+        end else begin
+            case (state)
+                S00: begin
+                    if      (AB == 2'b01) begin count <= count - 1; state <= S01; dir <= 1'b0; end
+                    else if (AB == 2'b10) begin count <= count + 1; state <= S10; dir <= 1'b1; end
                 end
-        endcase
-    end 
+                S01: begin
+                    if      (AB == 2'b00) begin count <= count + 1; state <= S00; dir <= 1'b1; end
+                    else if (AB == 2'b11) begin count <= count - 1; state <= S11; dir <= 1'b0; end
+                end
+                S10: begin
+                    if      (AB == 2'b00) begin count <= count - 1; state <= S00; dir <= 1'b0; end
+                    else if (AB == 2'b11) begin count <= count + 1; state <= S11; dir <= 1'b1; end
+                end
+                S11: begin
+                    if      (AB == 2'b01) begin count <= count + 1; state <= S01; dir <= 1'b1; end
+                    else if (AB == 2'b10) begin count <= count - 1; state <= S10; dir <= 1'b0; end
+                end
+                default: state <= S00;
+            endcase
+        end
+    end
 
 endmodule
