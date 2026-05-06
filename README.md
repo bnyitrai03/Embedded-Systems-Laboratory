@@ -10,4 +10,4 @@ RPI4B hostname: esl46.local
 
 DE10 hostname: root
 
-     password: EmbeddedSystemsLab
+     password: esl123
