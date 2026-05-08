@@ -116,10 +116,20 @@ add_interface_port s0 slave_writedata writedata Input -1
 ##   add_interface_port user_interface (YOUR_PORT) export (DIRECTION) (WIDTH)
 ##
 
-add_interface user_interface conduit end
-add_interface_port user_interface user_output export Output 1
-add_interface user_input_interface conduit end
-add_interface_port user_input_interface user_input export Input 4
+add_interface pitch_a conduit end
+add_interface_port pitch_a pitch_enc_a export Input 1
+
+add_interface pitch_b conduit end
+add_interface_port pitch_b pitch_enc_b export Input 1
+
+add_interface yaw_a conduit end
+add_interface_port yaw_a yaw_enc_a export Input 1
+
+add_interface yaw_b conduit end
+add_interface_port yaw_b yaw_enc_b export Input 1
+
+add_interface reset_button conduit end
+add_interface_port reset_button reset_button export Input 1
 
 ##
 ## - Validation/ elaboration functions
@@ -137,9 +147,11 @@ proc elaborate_me {}  {
   set_port_property slave_writedata WIDTH $the_data_width
 
   ## Set data with for the custom logic
-  set_port_property user_output WIDTH $the_led_width
-  set_port_property user_input WIDTH 4
-  
+  set_port_property reset_button WIDTH 1
+  set_port_property pitch_enc_a WIDTH 1
+  set_port_property pitch_enc_b WIDTH 1
+  set_port_property yaw_enc_a WIDTH 1
+  set_port_property yaw_enc_b WIDTH 1
   
   ## DO NOT REMOVE:
   ## adding the slave_byteenable and user_byteenable signals only if the data width is greater than 8 bits

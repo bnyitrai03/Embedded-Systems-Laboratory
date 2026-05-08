@@ -90,6 +90,9 @@ wire                fpga_clk_50;
 assign fpga_clk_50 = FPGA_CLK1_50;
 //assign  stm_hw_events = {{15{1'b0}}, SW, fpga_led_internal, fpga_debounced_buttons};
 
+wire reset_button;
+assign reset_button = ~KEY[0];
+
 
 
 //=======================================================
@@ -117,10 +120,12 @@ soc_system u0(
                .memory_mem_dm(HPS_DDR3_DM),                                 //                               .mem_dm
                .memory_oct_rzqin(HPS_DDR3_RZQ),                             //                               .oct_rzqin
                //FPGA IO
-               .esl_demo_export(LED),                                       //    led_pio_external_connection.
-			   //.quad_sw_export(SW),
+               .reset_button_export(reset_button),                          //    reset button
+			   .pitch_enc_a_export(PITCH_ENC_A),                            //    encoders for the two motors
+               .pitch_enc_b_export(PITCH_ENC_B),
+               .yaw_enc_a_export(YAW_ENC_A),
+               .yaw_enc_b_export(YAW_ENC_B),
                .hps_0_h2f_reset_reset_n(hps_fpga_reset_n)                   //    hps_0_h2f_reset.reset_n
-
            );
 
 endmodule
