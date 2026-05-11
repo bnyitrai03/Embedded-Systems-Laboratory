@@ -20,12 +20,17 @@ module esl_bus_demo #(
         input wire                       reset_button
     );
 
+    localparam YAW_DIR_BIT   = 0,
+               YAW_VALUE = 1,
+               PITCH_DIR_BIT = 2,
+               PITCH_VALUE = 3;
+
     // ------------------------------------------------------------
     // Encoder values declared
     // ------------------------------------------------------------
-    wire [6:0] pitch_count;
+    wire [31:0] pitch_count;
     wire       pitch_dir;
-    wire [6:0] yaw_count;
+    wire [31:0] yaw_count;
     wire       yaw_dir;
 
     // ------------------------------------------------------------
@@ -58,7 +63,13 @@ module esl_bus_demo #(
       if (reset) begin
         slave_readdata <= 32'b0;
       end else if (slave_read) begin
-        slave_readdata <= {16'b0, yaw_dir, yaw_count, pitch_dir, pitch_count};
+        case (slave_address)
+          YAW_DIR_BIT: slave_readdata <= {31'b0, yaw_dir};
+          YAW_VALUE: slave_readdata <= yaw_count;
+          PITCH_DIR_BIT: slave_readdata <= {31'b0, pitch_dir};
+          PITCH_VALUE: slave_readdata <= pitch_count;
+          default: slave_readdata <= 32'b0;
+        endcase
       end
     end
 

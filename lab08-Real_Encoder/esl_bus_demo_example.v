@@ -6,7 +6,7 @@ module esl_bus_demo_example (
     input  wire       B,
     input  wire       rst,
 
-    output reg  [6:0] count,
+    output reg signed  [31:0] count,
     output reg        dir
 );
 
