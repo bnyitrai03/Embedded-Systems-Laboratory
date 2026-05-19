@@ -1,0 +1,49 @@
+set_io --warn-no-port clk R9
+
+set_io --warn-no-port led1 C8
+set_io --warn-no-port led2 F7
+set_io --warn-no-port led3 K9
+
+set_io --warn-no-port PITCH_DIRA  D8
+set_io --warn-no-port PITCH_PWM_VAL  B9
+set_io --warn-no-port PITCH_ENC_A  B10
+set_io --warn-no-port PITCH_ENC_B  B11
+set_io --warn-no-port PITCH_DIRB  B8
+set_io --warn-no-port pmod1_8  A9
+set_io --warn-no-port pmod1_9  A10
+set_io --warn-no-port pmod1_10 A11
+
+set_io --warn-no-port YAW_DIRA  A5
+set_io --warn-no-port YAW_PWM_VAL  A2
+set_io --warn-no-port YAW_ENC_A  C3
+set_io --warn-no-port YAW_ENC_B  B4
+set_io --warn-no-port YAW_DIRB  B7
+set_io --warn-no-port pmod2_8  B6
+set_io --warn-no-port pmod2_9  B3
+set_io --warn-no-port pmod2_10 B5
+
+set_io --warn-no-port FREE1  L9
+set_io --warn-no-port FREE3  G5
+set_io --warn-no-port FREE5  L7
+set_io --warn-no-port pmod3_4  N6
+set_io --warn-no-port FREE2  N9
+set_io --warn-no-port FREE4  P9
+set_io --warn-no-port pmod3_9  M8
+set_io --warn-no-port pmod3_10 N7
+
+set_io --warn-no-port pmod4_1  T15
+set_io --warn-no-port pmod4_2  T14
+set_io --warn-no-port pmod4_3  T11
+set_io --warn-no-port pmod4_4  R10
+set_io --warn-no-port pmod4_7  R14
+set_io --warn-no-port pmod4_8  T13
+set_io --warn-no-port pmod4_9  T10
+set_io --warn-no-port pmod4_10 T9
+
+set_io --warn-no-port SPI_POCI  A7
+set_io --warn-no-port SPI_PICO  A6
+set_io --warn-no-port SPI_CLK  H11
+set_io --warn-no-port SPI_CS  D4
+
+set_io --warn-no-port btn1 K11
+set_io --warn-no-port btn2 P13
