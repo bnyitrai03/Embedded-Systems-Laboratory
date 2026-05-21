@@ -98,7 +98,6 @@ int main(int argc, char *argv[]) {
 
     tx = input;
     rx = 0x00;
-    expected = tx + 1;
 
     if (spiXfer(fd, speed, &tx, &rx, sizeof(tx)) < 1) {
         fprintf(stderr, "SPI transfer failed\n");
@@ -108,7 +107,6 @@ int main(int argc, char *argv[]) {
     
     printf("TX = %u (0x%02X)\n", tx, tx);
     printf("RX = %u (0x%02X)\n", rx, rx);
-    printf("Expected = %u (0x%02X)\n", expected, expected);
 
     spiClose(fd);
     return 0;
