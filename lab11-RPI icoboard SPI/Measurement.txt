@@ -1,0 +1,4 @@
+First we had 32 bit encoder + dir value, that range proved to be bigger than neededb(max yaw= 2453), so we decided to change it.
+With the new implementation we have 16 bits (15 bits encoder value, 1 bit direction), which makes the messages smaller and the communication 
+
+For the PWM we send 2x16 bits (14 bits PWM, 1 bit enable, 1 bit direction) for both motors.
