@@ -55,23 +55,26 @@ module TopEntity (
   reg led2;
   always @(posedge clk) if (byte_received) led2 <= byte_data_received[0];
 
-  reg [7:0] byte_data_sent;
+  reg [31:0] data_sent;
+  reg response_loaded;
   reg [7:0] cnt;
   always @(posedge clk) if (SPI_CS_startmessage) cnt <= cnt + 8'h1;
 
   always @(posedge clk) begin
     if (!SPI_CS_active) begin
-      byte_data_sent <= 8'h00;
-    end else begin
-      if (byte_received && byte_data_received == 8'h01) begin
-        byte_data_sent <= pitch_count[7:0];
-      end else if (SPI_CLK_fallingedge) begin
-        byte_data_sent <= {byte_data_sent[6:0], 1'b0};
-      end
+      data_sent <= 32'h00000000;
+      response_loaded <= 1'b0;
+    end else if (byte_received && byte_data_received == 8'h01) begin
+      data_sent <= pitch_count;
+      response_loaded <= 1'b1;
+    end else if (SPI_CLK_fallingedge && response_loaded) begin
+      response_loaded <= 1'b0;
+    end else if (SPI_CLK_fallingedge) begin
+      data_sent <= {data_sent[30:0], 1'b0};
     end
   end
 
 
-  assign SPI_POCI = byte_data_sent[7];
+  assign SPI_POCI = data_sent[31];
 
 endmodule

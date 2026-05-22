@@ -2,6 +2,7 @@
 #include <linux/spi/spidev.h>
 #include <linux/types.h>
 #include <stdint.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +16,13 @@
 #define DEFAULT_SPEED 100000
 #define CHANNEL 1
 #define MAX_SPI_BUFSIZ 8192
+
+static volatile sig_atomic_t keep_running = 1;
+
+void handle_sigint(int sig) {
+    (void)sig;
+    keep_running = 0;
+}
 
 int spiOpen(unsigned spiChan, unsigned spiBaud, unsigned spiFlags) {
     int fd;
@@ -70,11 +78,11 @@ int main(int argc, char *argv[]) {
     unsigned spiChan = CHANNEL;
     unsigned speed = DEFAULT_SPEED;
     uint8_t input;
-    uint8_t tx;
-    uint8_t rx;
-    uint8_t expected;
+    uint8_t tx[5];
+    uint8_t rx[5];
+    int32_t encoder_count;
 
-    if (argc < 2) {
+    if (argc < 3) {
         fprintf(stderr, "Usage: [speed_hz] [byte 0-255]\n");
         return 1;
     }
@@ -96,17 +104,38 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    tx = input;
-    rx = 0x00;
+    signal(SIGINT, handle_sigint);
 
-    if (spiXfer(fd, speed, &tx, &rx, sizeof(tx)) < 1) {
-        fprintf(stderr, "SPI transfer failed\n");
-        spiClose(fd);
-        return 1;
+    tx[0] = input;
+    tx[1] = 0x00;
+    tx[2] = 0x00;
+    tx[3] = 0x00;
+    tx[4] = 0x00;
+
+    while (keep_running) {
+        rx[0] = 0x00;
+        rx[1] = 0x00;
+        rx[2] = 0x00;
+        rx[3] = 0x00;
+        rx[4] = 0x00;
+
+        if (spiXfer(fd, speed, tx, rx, sizeof(tx)) < 1) {
+            fprintf(stderr, "SPI transfer failed\n");
+            spiClose(fd);
+            return 1;
+        }
+
+        encoder_count = (int32_t)(((uint32_t)rx[1] << 24) |
+                                  ((uint32_t)rx[2] << 16) |
+                                  ((uint32_t)rx[3] << 8) |
+                                  ((uint32_t)rx[4]));
+
+        printf("TX = %u (0x%02X), encoder = %d (0x%08X)\n",
+               tx[0], tx[0], encoder_count, (uint32_t)encoder_count);
+        usleep(100000);
     }
-    
-    printf("TX = %u (0x%02X)\n", tx, tx);
-    printf("RX = %u (0x%02X)\n", rx, rx);
+
+    printf("\nStopping SPI loop\n");
 
     spiClose(fd);
     return 0;
