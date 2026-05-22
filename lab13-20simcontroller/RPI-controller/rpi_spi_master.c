@@ -1,113 +1,131 @@
+#include "rpi_spi_master.h"
+
+#include <errno.h>
 #include <fcntl.h>
 #include <linux/spi/spidev.h>
-#include <linux/types.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include <sys/time.h>
 #include <unistd.h>
 
-// Usage: ./spi_master [speed_hz] [byte 0-255]
-// Expected behavior: The Master (RPI4) sends a byte parsed from terminal to the SPI slave (IcoBoard) and expects to receive the byte incremented by 1 in response.
-
-#define DEFAULT_SPEED 100000
-#define CHANNEL 1
-#define MAX_SPI_BUFSIZ 8192
-
-int spiOpen(unsigned spiChan, unsigned spiBaud, unsigned spiFlags) {
+static int spi_open_device(unsigned spi_channel,
+                           unsigned speed_hz,
+                           unsigned spi_flags)
+{
     int fd;
-    uint8_t spiMode;
-    uint8_t spiBits = 8;
+    uint8_t spi_mode = (uint8_t)(spi_flags & 0x3u);
+    uint8_t spi_bits = 8;
     char dev[32];
 
-    spiMode = spiFlags & 0x3;
-    snprintf(dev, sizeof(dev), "/dev/spidev0.%u", spiChan);
+    snprintf(dev, sizeof(dev), "/dev/spidev0.%u", spi_channel);
 
     fd = open(dev, O_RDWR);
-    if (fd < 0) return -1;
-
-    if (ioctl(fd, SPI_IOC_WR_MODE, &spiMode) < 0) {
-        close(fd);
-        return -2;
+    if (fd < 0) {
+        return -errno;
     }
 
-    if (ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &spiBits) < 0) {
+    if (ioctl(fd, SPI_IOC_WR_MODE, &spi_mode) < 0) {
+        int saved_errno = errno;
         close(fd);
-        return -3;
+        return -saved_errno;
     }
 
-    if (ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &spiBaud) < 0) {
+    if (ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &spi_bits) < 0) {
+        int saved_errno = errno;
         close(fd);
-        return -4;
+        return -saved_errno;
+    }
+
+    if (ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed_hz) < 0) {
+        int saved_errno = errno;
+        close(fd);
+        return -saved_errno;
     }
 
     return fd;
 }
 
-int spiClose(int fd) {
-    return close(fd);
-}
+static int spi_transfer(RpiSpiComm *spi, uint8_t tx[4], uint8_t rx[4])
+{
+    struct spi_ioc_transfer transfer;
 
-int spiXfer(int fd, unsigned speed, uint8_t *txBuf, uint8_t *rxBuf, unsigned count) {
-    struct spi_ioc_transfer spi;
-    memset(&spi, 0, sizeof(spi));
+    /*
+     * Protocol words are packed as bytes in control_protocol.c. Keep spidev at
+     * 8 bits/word so byte order is explicit and portable across SPI drivers.
+     */
+    memset(&transfer, 0, sizeof(transfer));
+    transfer.tx_buf = (unsigned long)tx;
+    transfer.rx_buf = (unsigned long)rx;
+    transfer.len = 4;
+    transfer.speed_hz = spi->speed_hz;
+    transfer.delay_usecs = 0;
+    transfer.bits_per_word = 8;
+    transfer.cs_change = 0;
 
-    spi.tx_buf = (unsigned long)txBuf;
-    spi.rx_buf = (unsigned long)rxBuf;
-    spi.len = count;
-    spi.speed_hz = speed;
-    spi.delay_usecs = 0;
-    spi.bits_per_word = 8;
-    spi.cs_change = 0;
-
-    return ioctl(fd, SPI_IOC_MESSAGE(1), &spi);
-}
-
-int main(int argc, char *argv[]) {
-    int fd;
-    unsigned spiChan = CHANNEL;
-    unsigned speed = DEFAULT_SPEED;
-    uint8_t input;
-    uint8_t tx;
-    uint8_t rx;
-    uint8_t expected;
-
-    if (argc < 2) {
-        fprintf(stderr, "Usage: [speed_hz] [byte 0-255]\n");
-        return 1;
+    if (ioctl(spi->fd, SPI_IOC_MESSAGE(1), &transfer) < 1) {
+        return -errno;
     }
 
-    speed = (unsigned)atoi(argv[1]);
-    if (speed < 32000 || speed > 250000000) {
-        speed = DEFAULT_SPEED;
-    }
-
-    input = (uint8_t)atoi(argv[2]);
-    if (input > 255) {
-        fprintf(stderr, "Input byte must be between 0 and 255\n");
-        return 1;
-    }
-
-    fd = spiOpen(spiChan, speed, 0);   // mode 0
-    if (fd < 0) {
-        fprintf(stderr, "Failed to open SPI device /dev/spidev0.%u\n", spiChan);
-        return 1;
-    }
-
-    tx = input;
-    rx = 0x00;
-
-    if (spiXfer(fd, speed, &tx, &rx, sizeof(tx)) < 1) {
-        fprintf(stderr, "SPI transfer failed\n");
-        spiClose(fd);
-        return 1;
-    }
-    
-    printf("TX = %u (0x%02X)\n", tx, tx);
-    printf("RX = %u (0x%02X)\n", rx, rx);
-
-    spiClose(fd);
     return 0;
+}
+
+static int rpi_spi_exchange(void *context,
+                            MotorCommand command,
+                            EncoderSample *sample)
+{
+    RpiSpiComm *spi = (RpiSpiComm *)context;
+    uint8_t tx[4];
+    uint8_t rx[4] = {0, 0, 0, 0};
+    int result;
+
+    protocol_pack_command(command, tx);
+
+    result = spi_transfer(spi, tx, rx);
+    if (result < 0) {
+        return result;
+    }
+
+    if (sample != 0) {
+        *sample = protocol_unpack_encoders(rx);
+    }
+
+    return 0;
+}
+
+static void rpi_spi_close_context(void *context)
+{
+    rpi_spi_comm_close((RpiSpiComm *)context);
+}
+
+int rpi_spi_comm_open(RpiSpiComm *spi,
+                      MotorComm *comm,
+                      unsigned channel,
+                      unsigned speed_hz,
+                      unsigned spi_flags)
+{
+    int fd;
+
+    fd = spi_open_device(channel, speed_hz, spi_flags);
+    if (fd < 0) {
+        return fd;
+    }
+
+    spi->fd = fd;
+    spi->speed_hz = speed_hz;
+    spi->channel = channel;
+
+    comm->context = spi;
+    comm->exchange = rpi_spi_exchange;
+    comm->close = rpi_spi_close_context;
+
+    return 0;
+}
+
+void rpi_spi_comm_close(RpiSpiComm *spi)
+{
+    if (spi->fd >= 0) {
+        close(spi->fd);
+        spi->fd = -1;
+    }
 }
