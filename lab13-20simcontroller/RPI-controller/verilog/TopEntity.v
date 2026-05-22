@@ -35,6 +35,7 @@ module TopEntity (
 
   SPI spi_comm(
     .clk(clk),
+    .rst(btn1),
     .spi_clk(SPI_CLK),
     .spi_pico(SPI_PICO),
     .spi_cs(SPI_CS),

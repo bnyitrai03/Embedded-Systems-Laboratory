@@ -23,6 +23,9 @@ RX byte 0..1: yaw encoder   signed int16
 RX byte 2..3: pitch encoder signed int16
 ```
 
+The PWM field has 14 protocol bits, but the current FPGA PWM period is 2500
+ticks at 50 MHz / 20 kHz. The C side clamps commands to `0..2500`.
+
 Direction convention in the C code is `0 = negative/decreasing encoder`,
 `1 = positive/increasing encoder`. If the FPGA uses the opposite polarity,
 swap the direction handling in `control_protocol.c` or in the FPGA.

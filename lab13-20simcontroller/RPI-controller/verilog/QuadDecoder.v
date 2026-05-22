@@ -27,55 +27,46 @@ module QuadDecoder (
         if (rst) begin
             count <= 0;
             state <= S00;
-            dir <= 1'b0;
         end else begin
             case (state)
                 S00: begin
                     if (AB == 2'b01) begin
                         count <= count - 1;
                         state <= S01;
-                        dir <= 1'b0;
                     end
                     else if (AB == 2'b10) begin
                         count <= count + 1;
                         state <= S10;
-                        dir <= 1'b1;
                     end
                 end
                 S01: begin
                     if (AB == 2'b00) begin
                         count <= count + 1;
                         state <= S00;
-                        dir <= 1'b1;
                     end
                     else if (AB == 2'b11) begin
                         count <= count - 1;
                         state <= S11;
-                        dir <= 1'b0;
                     end
                 end
                 S10: begin
                     if (AB == 2'b00) begin
                         count <= count - 1;
                         state <= S00;
-                        dir <= 1'b0;
                     end
                     else if (AB == 2'b11) begin
                         count <= count + 1;
                         state <= S11;
-                        dir <= 1'b1;
                     end
                 end
                 S11: begin
                     if (AB == 2'b01) begin
                         count <= count + 1;
                         state <= S01;
-                        dir <= 1'b1;
                     end
                     else if (AB == 2'b10) begin
                         count <= count - 1;
                         state <= S10;
-                        dir <= 1'b0;
                     end
                 end
             endcase

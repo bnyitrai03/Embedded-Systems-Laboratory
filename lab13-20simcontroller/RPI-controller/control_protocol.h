@@ -13,7 +13,11 @@
  * RX, big-endian:
  *   yaw signed int16 encoder count, then pitch signed int16 encoder count.
  */
-#define MOTOR_PWM_MAX 0x3FFFu
+/*
+ * The protocol field is 14 bits, but the current FPGA PWM period is 2500 ticks
+ * at 50 MHz / 20 kHz. Clamp commands to that hardware duty range on the C side.
+ */
+#define MOTOR_PWM_MAX 2500u
 
 typedef enum {
     MOTOR_DIR_NEGATIVE = 0,

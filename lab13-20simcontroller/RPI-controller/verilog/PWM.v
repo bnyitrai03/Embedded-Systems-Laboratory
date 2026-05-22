@@ -14,7 +14,7 @@ module PWM #(
     output reg         INB,
     output reg         C // ie PWM
 );
-    // 2500 ticks for one period for the above values BE CAREFUL not higher!
+    // 2500 ticks for one period with the default 50 MHz / 20 kHz settings.
     localparam PWM_PERIOD = CLK_FREQ / PWM_FREQ;
 
     reg [13:0] counter;
@@ -43,7 +43,7 @@ module PWM #(
                 // dir = 0 gives one direction, dir = 1 gives the other.
                 INA <= ~dir;
                 INB <= dir;
-                // C stays high until the counter reaches the duty value.
+                // duty is expressed directly in PWM clock ticks, max 2500.
                 C   <= (counter < duty);
             end else begin
                 // Safe stop state when the module is disabled.

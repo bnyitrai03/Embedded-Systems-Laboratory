@@ -10,7 +10,7 @@
  *   gcc -O2 -Wall -Wextra -std=c11 -o spi_motor_smoke_test spi_motor_smoke_test.c
  *
  * Example, yaw only, low PWM, positive direction:
- *   ./spi_motor_smoke_test 100000 300 1 0 0 200 10
+ *   ./spi_motor_smoke_test 100000 1500 1 0 0 200 10
  *
  * Arguments:
  *   speed_hz yaw_pwm yaw_dir pitch_pwm pitch_dir loops period_ms
@@ -40,7 +40,7 @@
 #define DEFAULT_SPEED_HZ 100000u
 #define DEFAULT_LOOPS 200u
 #define DEFAULT_PERIOD_MS 10u
-#define PWM_MAX 0x3FFFu
+#define PWM_MAX 2500u
 
 static volatile sig_atomic_t keep_running = 1;
 
@@ -92,7 +92,7 @@ static uint16_t pack_axis(unsigned pwm, unsigned direction)
 
     return (uint16_t)(((direction ? 1u : 0u) << 15) |
                       ((enable ? 1u : 0u) << 14) |
-                      (pwm & PWM_MAX));
+                      pwm);
 }
 
 static void pack_frame(uint8_t tx[4],

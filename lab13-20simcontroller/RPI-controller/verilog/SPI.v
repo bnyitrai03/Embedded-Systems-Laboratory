@@ -1,5 +1,6 @@
 module SPI (
     input  wire        clk,
+    input  wire        rst,
     input  wire        spi_clk,
     input  wire        spi_pico,
     input  wire        spi_cs,
@@ -18,33 +19,44 @@ module SPI (
     output wire        spi_poci
 );
 
+  /*
+   * 32-bit full-duplex SPI frame, mode 0.
+   *
+   * Raspberry Pi -> FPGA:
+   *   [31:16] yaw   bit15 dir, bit14 enable, bit13..0 PWM
+   *   [15:0]  pitch bit15 dir, bit14 enable, bit13..0 PWM
+   *
+   * FPGA -> Raspberry Pi:
+   *   [31:16] signed yaw encoder count
+   *   [15:0]  signed pitch encoder count
+   */
+
   // Clock synchronization
-  reg [2:0] SPI_CLKr;
+  reg [2:0] SPI_CLKr = 3'b000;
   always @(posedge clk)
-    SPI_CLKr <= {SPI_CLKr[1:0], SPI_CLK};
+    SPI_CLKr <= {SPI_CLKr[1:0], spi_clk};
 
   wire SPI_CLK_risingedge  = (SPI_CLKr[2:1] == 2'b01);
   wire SPI_CLK_fallingedge = (SPI_CLKr[2:1] == 2'b10);
 
-  reg [2:0] SPI_CSr;
+  reg [2:0] SPI_CSr = 3'b111;
   always @(posedge clk)
-    SPI_CSr <= {SPI_CSr[1:0], SPI_CS};
+    SPI_CSr <= {SPI_CSr[1:0], spi_cs};
 
   wire SPI_CS_active       = ~SPI_CSr[1];
   wire SPI_CS_startmessage = (SPI_CSr[2:1] == 2'b10);
   wire SPI_CS_endmessage   = (SPI_CSr[2:1] == 2'b01);
 
-  reg [1:0] SPI_PICOr;
+  reg [1:0] SPI_PICOr = 2'b00;
   always @(posedge clk)
-    SPI_PICOr <= {SPI_PICOr[0], SPI_PICO};
+    SPI_PICOr <= {SPI_PICOr[0], spi_pico};
 
   wire SPI_PICO_data = SPI_PICOr[1];
 
-  // 32-bit receive and transmit shift registers
-  reg [31:0] rx_shift = 0;
-  reg [31:0] tx_shift = 0;
+  reg [31:0] rx_shift = 32'h00000000;
+  reg [31:0] tx_shift = 32'h00000000;
+  reg [5:0]  bit_count = 6'd0;
 
-  // Latched output signals
   reg [13:0] pitch_pwm_duty_r   = 14'd0;
   reg        pitch_dir_r        = 1'b0;
   reg        pitch_pwm_enable_r = 1'b0;
@@ -53,42 +65,57 @@ module SPI (
   reg        yaw_dir_r          = 1'b0;
   reg        yaw_pwm_enable_r   = 1'b0;
 
-
-  reg [2:0] bitcnt;
-  reg       byte_received;
-  reg [7:0] byte_data_received;
-
   always @(posedge clk) begin
-    if (~SPI_CS_active)
-      bitcnt <= 3'b000;
-    else if (SPI_CLK_risingedge) begin
-      bitcnt <= bitcnt + 3'b001;
-      byte_data_received <= {byte_data_received[6:0], SPI_PICO_data};
-    end
-  end
+    if (rst) begin
+      tx_shift <= 32'h00000000;
+      rx_shift <= 32'h00000000;
+      bit_count <= 6'd0;
+      yaw_pwm_duty_r <= 14'd0;
+      yaw_dir_r <= 1'b0;
+      yaw_pwm_enable_r <= 1'b0;
+      pitch_pwm_duty_r <= 14'd0;
+      pitch_dir_r <= 1'b0;
+      pitch_pwm_enable_r <= 1'b0;
+    end else begin
+      if (!SPI_CS_active) begin
+        tx_shift <= {yaw_encoder_count, pitch_encoder_count};
+        rx_shift <= 32'h00000000;
+        bit_count <= 6'd0;
+      end else if (SPI_CS_startmessage) begin
+        /*
+         * Snapshot encoders at chip-select assertion so all 32 return bits
+         * belong to the same sample.
+         */
+        tx_shift <= {yaw_encoder_count, pitch_encoder_count};
+        rx_shift <= 32'h00000000;
+        bit_count <= 6'd0;
+      end else if (SPI_CS_active && SPI_CLK_risingedge) begin
+        rx_shift <= {rx_shift[30:0], SPI_PICO_data};
+        if (bit_count < 6'd32) begin
+          bit_count <= bit_count + 6'd1;
+        end
+      end
 
-  always @(posedge clk)
-    byte_received <= SPI_CS_active && SPI_CLK_risingedge && (bitcnt == 3'b111);
+      /*
+       * SPI mode 0: the master samples POCI on rising edges. The slave shifts
+       * the next output bit on falling edges.
+       */
+      if (SPI_CS_active && SPI_CLK_fallingedge) begin
+        tx_shift <= {tx_shift[30:0], 1'b0};
+      end
 
-  reg [31:0] data_sent;
-  reg        response_loaded;
-  reg [7:0]  cnt;
-
-  always @(posedge clk)
-    if (SPI_CS_startmessage)
-      cnt <= cnt + 8'h1;
-
-  always @(posedge clk) begin
-    if (!SPI_CS_active) begin
-      data_sent       <= 32'h00000000;
-      response_loaded <= 1'b0;
-    end else if (byte_received && byte_data_received == 8'h01) begin
-      data_sent       <= pitch_count;
-      response_loaded <= 1'b1;
-    end else if (SPI_CLK_fallingedge && response_loaded) begin
-      response_loaded <= 1'b0;
-    end else if (SPI_CLK_fallingedge) begin
-      data_sent <= {data_sent[30:0], 1'b0};
+      /*
+       * Only commit a new motor command after a complete 32-bit frame. Short or
+       * noisy transfers are ignored, leaving the previous command active.
+       */
+      if (SPI_CS_endmessage && bit_count == 6'd32) begin
+        yaw_dir_r          <= rx_shift[31];
+        yaw_pwm_enable_r   <= rx_shift[30];
+        yaw_pwm_duty_r     <= rx_shift[29:16];
+        pitch_dir_r        <= rx_shift[15];
+        pitch_pwm_enable_r <= rx_shift[14];
+        pitch_pwm_duty_r   <= rx_shift[13:0];
+      end
     end
   end
 
@@ -99,7 +126,7 @@ module SPI (
   assign yaw_pwm_duty     = yaw_pwm_duty_r;
   assign yaw_dir          = yaw_dir_r;
   assign yaw_pwm_enable   = yaw_pwm_enable_r;
-  
-  assign SPI_POCI = data_sent[31];
+
+  assign spi_poci = tx_shift[31];
 
 endmodule

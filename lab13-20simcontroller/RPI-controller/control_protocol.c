@@ -11,7 +11,7 @@ uint16_t protocol_pack_axis(AxisCommand command)
 
     return (uint16_t)(((command.direction == MOTOR_DIR_POSITIVE) ? 0x8000u : 0u) |
                       (command.enable ? 0x4000u : 0u) |
-                      (pwm & MOTOR_PWM_MAX));
+                      pwm);
 }
 
 AxisCommand protocol_axis_off(void)
