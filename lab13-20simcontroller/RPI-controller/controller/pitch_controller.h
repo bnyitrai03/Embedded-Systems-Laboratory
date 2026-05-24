@@ -18,8 +18,8 @@
    The model itself is the pitchmodel.c file
 */
 
-#ifndef XX_MODEL_H
-#define XX_MODEL_H
+#ifndef PITCH_MODEL_H
+#define PITCH_MODEL_H
 
 /* Our own include files */
 #include "xxtypes.h"
@@ -60,21 +60,21 @@ extern XXString pitch_rate_names[];
 
 /* Initialization methods */
 /* Initialize complete model */
-void XXModelInitialize (void);
+void pitchModelInitialize (void);
 /* Initialize specific model values */
-void XXModelInitialize_parameters(void);
-void XXModelInitialize_initialvalues(void);
-void XXModelInitialize_states(void);
-void XXModelInitialize_variables(void);
-void XXModelTerminate (void);
+void pitchModelInitialize_parameters(void);
+void pitchModelInitialize_initialvalues(void);
+void pitchModelInitialize_states(void);
+void pitchModelInitialize_variables(void);
+void pitchModelTerminate (void);
 
 /* Computation methods */
-void XXCalculateInitial (void);
-void XXCalculateStatic (void);
-void XXCalculateInput (void);
-void XXCalculateDynamic (void);
-void XXCalculateOutput (void);
-void XXCalculateFinal (void);
+void pitchCalculateInitial (void);
+void pitchCalculateStatic (void);
+void pitchCalculateInput (void);
+void pitchCalculateDynamic (void);
+void pitchCalculateOutput (void);
+void pitchCalculateFinal (void);
 
 
 #endif

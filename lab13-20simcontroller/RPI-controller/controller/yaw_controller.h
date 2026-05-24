@@ -60,21 +60,21 @@ extern XXString yaw_rate_names[];
 
 /* Initialization methods */
 /* Initialize complete model */
-void YawModelInitialize (void);
+void yawModelInitialize (void);
 /* Initialize specific model values */
-void YawModelInitialize_parameters(void);
-void YawModelInitialize_initialvalues(void);
-void YawModelInitialize_states(void);
-void YawModelInitialize_variables(void);
-void YawModelTerminate (void);
+void yawModelInitialize_parameters(void);
+void yawModelInitialize_initialvalues(void);
+void yawModelInitialize_states(void);
+void yawModelInitialize_variables(void);
+void yawModelTerminate (void);
 
 /* Computation methods */
-void YawCalculateInitial (void);
-void YawCalculateStatic (void);
-void YawCalculateInput (void);
-void YawCalculateDynamic (void);
-void YawCalculateOutput (void);
-void YawCalculateFinal (void);
+void yawCalculateInitial (void);
+void yawCalculateStatic (void);
+void yawCalculateInput (void);
+void yawCalculateDynamic (void);
+void yawCalculateOutput (void);
+void yawCalculateFinal (void);
 
 
 #endif

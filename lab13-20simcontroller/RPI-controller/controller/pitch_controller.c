@@ -108,7 +108,7 @@ XXString pitch_rate_names[] = {
 #if (7 > 8192) && defined _MSC_VER
 #pragma optimize("", off)
 #endif
-void XXModelInitialize_parameters(void)
+void pitchModelInitialize_parameters(void)
 {
 	/* set the parameters */
 	pitch_P[0] = 0.0;		/* corrGain\K */
@@ -124,7 +124,7 @@ void XXModelInitialize_parameters(void)
 #pragma optimize("", on)
 #endif
 
-void XXModelInitialize_initialvalues(void)
+void pitchModelInitialize_initialvalues(void)
 {
 	/* set the initial values */
 	pitch_I[0] = 0.0;		/* PID1\uD_previous_initial */
@@ -133,7 +133,7 @@ void XXModelInitialize_initialvalues(void)
 
 }
 
-void XXModelInitialize_states(void)
+void pitchModelInitialize_states(void)
 {
 	/* set the states */
 	pitch_s[0] = pitch_I[0];		/* PID1\uD_previous */
@@ -142,35 +142,35 @@ void XXModelInitialize_states(void)
 
 }
 
-void XXModelInitialize_variables(void)
+void pitchModelInitialize_variables(void)
 {
 	/* initialize the variable memory to zero */
 	memset(pitch_V, 0, pitch_variables_size * sizeof(XXDouble));
 }
 
 /* this method is called before calculation is possible */
-void XXModelInitialize (void)
+void pitchModelInitialize (void)
 {
-	XXModelInitialize_parameters();
-	XXModelInitialize_variables();
-	XXModelInitialize_initialvalues();
-	XXModelInitialize_states();
+	pitchModelInitialize_parameters();
+	pitchModelInitialize_variables();
+	pitchModelInitialize_initialvalues();
+	pitchModelInitialize_states();
 }
 
 /* This function calculates the initial equations of the model.
  * These equations are calculated before anything else
  */
-void XXCalculateInitial (void)
+void pitchCalculateInitial (void)
 {
 
 	/* set the states again, they might have changed in the initial calculation */
-	XXModelInitialize_states ();
+	pitchModelInitialize_states ();
 }
 
 /* This function calculates the static equations of the model.
  * These equations are only dependent from parameters and constants
  */
-void XXCalculateStatic (void)
+void pitchCalculateStatic (void)
 {
 
 }
@@ -179,7 +179,7 @@ void XXCalculateStatic (void)
  * These equations are dynamic equations that must not change
  * in calls from the integration method (like random and delay).
  */
-void XXCalculateInput (void)
+void pitchCalculateInput (void)
 {
 
 }
@@ -188,7 +188,7 @@ void XXCalculateInput (void)
  * These equations are called from the integration method
  * to calculate the new model rates (that are then integrated).
  */
-void XXCalculateDynamic (void)
+void pitchCalculateDynamic (void)
 {
 	/* PID1\factor = 1 / (sampletime + PID1\tauD * PID1\beta); */
 	pitch_V[3] = 1.0 / (pitch_step_size + pitch_P[2] * pitch_P[3]);
@@ -246,7 +246,7 @@ void XXCalculateDynamic (void)
  * These dynamic equations are called often more than one time for each
  * integration step that is taken. This makes model computation much faster.
  */
-void XXCalculateOutput (void)
+void pitchCalculateOutput (void)
 {
 	/* out = SignalLimiter2\output; */
 	pitch_V[11] = pitch_V[7];
@@ -257,13 +257,13 @@ void XXCalculateOutput (void)
  * These equations are calculated after all the calculations
  * are performed
  */
-void XXCalculateFinal (void)
+void pitchCalculateFinal (void)
 {
 
 }
 
 /* this method is called after all calculations are performed */
-void XXModelTerminate(void)
+void pitchModelTerminate(void)
 {
 }
 

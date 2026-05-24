@@ -106,7 +106,7 @@ XXString yaw_rate_names[] = {
 #if (7 > 8192) && defined _MSC_VER
 #pragma optimize("", off)
 #endif
-void YawModelInitialize_parameters(void)
+void yawModelInitialize_parameters(void)
 {
 	/* set the parameters */
 	yaw_P[0] = 0.0;		/* corrGain\K */
@@ -122,7 +122,7 @@ void YawModelInitialize_parameters(void)
 #pragma optimize("", on)
 #endif
 
-void YawModelInitialize_initialvalues(void)
+void yawModelInitialize_initialvalues(void)
 {
 	/* set the initial values */
 	yaw_I[0] = 0.0;		/* PID1\uD_previous_initial */
@@ -131,7 +131,7 @@ void YawModelInitialize_initialvalues(void)
 
 }
 
-void YawModelInitialize_states(void)
+void yawModelInitialize_states(void)
 {
 	/* set the states */
 	yaw_s[0] = yaw_I[0];		/* PID1\uD_previous */
@@ -140,35 +140,35 @@ void YawModelInitialize_states(void)
 
 }
 
-void YawModelInitialize_variables(void)
+void yawModelInitialize_variables(void)
 {
 	/* initialize the variable memory to zero */
 	memset(yaw_V, 0, yaw_variables_size * sizeof(XXDouble));
 }
 
 /* this method is called before calculation is possible */
-void YawModelInitialize (void)
+void yawModelInitialize (void)
 {
-	YawModelInitialize_parameters();
-	YawModelInitialize_variables();
-	YawModelInitialize_initialvalues();
-	YawModelInitialize_states();
+	yawModelInitialize_parameters();
+	yawModelInitialize_variables();
+	yawModelInitialize_initialvalues();
+	yawModelInitialize_states();
 }
 
 /* This function calculates the initial equations of the model.
  * These equations are calculated before anything else
  */
-void YawCalculateInitial (void)
+void yawCalculateInitial (void)
 {
 
 	/* set the states again, they might have changed in the initial calculation */
-	YawModelInitialize_states ();
+	yawModelInitialize_states ();
 }
 
 /* This function calculates the static equations of the model.
  * These equations are only dependent from parameters and constants
  */
-void YawCalculateStatic (void)
+void yawCalculateStatic (void)
 {
 
 }
@@ -177,7 +177,7 @@ void YawCalculateStatic (void)
  * These equations are dynamic equations that must not change
  * in calls from the integration method (like random and delay).
  */
-void YawCalculateInput (void)
+void yawCalculateInput (void)
 {
 
 }
@@ -186,7 +186,7 @@ void YawCalculateInput (void)
  * These equations are called from the integration method
  * to calculate the new model rates (that are then integrated).
  */
-void YawCalculateDynamic (void)
+void yawCalculateDynamic (void)
 {
 	/* PID1\factor = 1 / (sampletime + PID1\tauD * PID1\beta); */
 	yaw_V[2] = 1.0 / (yaw_step_size + yaw_P[2] * yaw_P[3]);
@@ -238,7 +238,7 @@ void YawCalculateDynamic (void)
  * These dynamic equations are called often more than one time for each
  * integration step that is taken. This makes model computation much faster.
  */
-void YawCalculateOutput (void)
+void yawCalculateOutput (void)
 {
 	/* corr = corrGain\corr; */
 	yaw_V[6] = yaw_V[0];
@@ -252,13 +252,13 @@ void YawCalculateOutput (void)
  * These equations are calculated after all the calculations
  * are performed
  */
-void YawCalculateFinal (void)
+void yawCalculateFinal (void)
 {
 
 }
 
 /* this method is called after all calculations are performed */
-void YawModelTerminate(void)
+void yawModelTerminate(void)
 {
 }
 
