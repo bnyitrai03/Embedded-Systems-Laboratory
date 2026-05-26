@@ -15,7 +15,7 @@ static int spi_open_device(unsigned spi_channel,
 {
     int fd;
     uint8_t spi_mode = (uint8_t)(spi_flags & 0x3u);
-    uint8_t spi_bits = 8;
+    uint8_t spi_bits = 32;
     char dev[32];
 
     snprintf(dev, sizeof(dev), "/dev/spidev0.%u", spi_channel);
@@ -52,7 +52,7 @@ static int spi_transfer(RpiSpiComm *spi, uint8_t tx[4], uint8_t rx[4])
 
     /*
      * Protocol words are packed as bytes in control_protocol.c. Keep spidev at
-     * 8 bits/word so byte order is explicit and portable across SPI drivers.
+     * 32 bits/word so byte order is explicit and portable across SPI drivers.
      */
     memset(&transfer, 0, sizeof(transfer));
     transfer.tx_buf = (unsigned long)tx;
@@ -60,7 +60,7 @@ static int spi_transfer(RpiSpiComm *spi, uint8_t tx[4], uint8_t rx[4])
     transfer.len = 4;
     transfer.speed_hz = spi->speed_hz;
     transfer.delay_usecs = 0;
-    transfer.bits_per_word = 8;
+    transfer.bits_per_word = 32;
     transfer.cs_change = 0;
 
     if (ioctl(spi->fd, SPI_IOC_MESSAGE(1), &transfer) < 1) {
