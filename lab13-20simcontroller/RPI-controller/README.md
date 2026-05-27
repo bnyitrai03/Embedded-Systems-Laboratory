@@ -7,13 +7,13 @@ See `ARCHITECTURE.md` for the control/data-flow explanation.
 - `motor_comm.h`: communication interface used by the controller application.
 - `rpi_spi_master.*`: Raspberry Pi spidev implementation of that interface.
 - `jiwy_calibration.*`: converts encoder counts to radians and owns software home offsets, travel limits, and target clamps.
-- `twentysim_controller.*`: initializes and steps the generated yaw/pitch 20-sim submodels, applies PID overrides, and converts normalized controller output to PWM commands.
+- `twentysim_controller.*`: initializes and steps the generated yaw/pitch 20-sim submodels and converts normalized controller output to PWM commands.
 - `control_loop.*`: time-driven position-control loop with a replaceable target provider.
 - `homing.*`: sequential yaw/pitch software homing routine.
 - `main.c`: starts SPI, runs homing, initializes the controller after homing when `--hold` is requested, and prints the software home offsets.
 - `jiwy_config.h`: measured encoder travel calibration and initial software limits.
-- PID tuning values also live in `jiwy_config.h`; do not edit generated
-  `controller/yaw_controller/*` or `controller/pitch_controller/*` files for tuning.
+- `controller/jiwy_20sim_tuning.h`: yaw/pitch PID tuning values used by the
+  generated 20-sim model initializers.
 
 The SPI frame is big-endian:
 
@@ -90,8 +90,11 @@ Edit `jiwy_config.h` when you remeasure the setup or want to test different
 travel assumptions. These values affect count-to-radian conversion and the
 target clamps used by the calibration and 20-sim controller wrapper.
 
-For controller tuning, edit the named PID constants in `jiwy_config.h`, rebuild,
-and test again. The generated 20-sim parameters are:
+For controller tuning, edit the named PID constants in
+`controller/jiwy_20sim_tuning.h`, rebuild, and test again. The generated
+`yaw_model.c` and `pitch_model.c` files include this hand-owned header in their
+parameter initializer functions. If you regenerate 20-sim code, reapply that
+small include/macro change. The generated 20-sim parameters are:
 
 ```text
 kp      proportional gain

@@ -40,6 +40,7 @@
 /* 20-sim include files */
 #include "pitch_model.h"
 #include "pitch_funcs.h"
+#include "../jiwy_20sim_tuning.h"
 
 /* the global variables */
 PitchDouble pitch_start_time = 0.0;
@@ -111,13 +112,13 @@ PitchString pitch_rate_names[] = {
 void PitchModelInitialize_parameters(void)
 {
 	/* set the parameters */
-	pitch_P[0] = 0.0;		/* corrGain\K */
-	pitch_P[1] = 1.6;		/* PID1\kp */
-	pitch_P[2] = 0.05;		/* PID1\tauD */
-	pitch_P[3] = 0.001;		/* PID1\beta */
-	pitch_P[4] = 10.5;		/* PID1\tauI */
-	pitch_P[5] = -0.99;		/* SignalLimiter2\minimum */
-	pitch_P[6] = 0.99;		/* SignalLimiter2\maximum */
+	pitch_P[0] = JIWY_PITCH_CORR_GAIN;		/* corrGain\K */
+	pitch_P[1] = JIWY_PITCH_KP;		/* PID1\kp */
+	pitch_P[2] = JIWY_PITCH_TAU_D;		/* PID1\tauD */
+	pitch_P[3] = JIWY_PITCH_BETA;		/* PID1\beta */
+	pitch_P[4] = JIWY_PITCH_TAU_I;		/* PID1\tauI */
+	pitch_P[5] = JIWY_PITCH_OUTPUT_MIN;		/* SignalLimiter2\minimum */
+	pitch_P[6] = JIWY_PITCH_OUTPUT_MAX;		/* SignalLimiter2\maximum */
 
 }
 #if (7 > 8192) && defined _MSC_VER

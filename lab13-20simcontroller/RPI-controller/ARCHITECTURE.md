@@ -67,12 +67,12 @@ the provider convert that latest value into yaw/pitch target radians.
 
 - encoder travel counts and travel degrees
 - software travel limits
-- yaw and pitch PID constants
-- controller output clamps
 
-The generated files in `controller/yaw_controller/` and
-`controller/pitch_controller/` should stay replaceable. If 20-sim code is
-regenerated, copy the new files in and keep local tuning in `jiwy_config.h`.
+`controller/jiwy_20sim_tuning.h` contains yaw and pitch PID constants and
+controller output clamps used by the generated model parameter initializers. If
+20-sim code is regenerated, reapply the small include/macro edits in
+`yaw_model.c` and `pitch_model.c` so the generated initializers continue using
+that tuning header.
 
 ## Timing assumptions
 

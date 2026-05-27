@@ -3,19 +3,6 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "jiwy_config.h"
-
-enum {
-    /* Generated parameter order from yaw_model.c and pitch_model.c. */
-    PARAM_CORR_GAIN = 0,
-    PARAM_KP = 1,
-    PARAM_TAU_D = 2,
-    PARAM_BETA = 3,
-    PARAM_TAU_I = 4,
-    PARAM_OUTPUT_MIN = 5,
-    PARAM_OUTPUT_MAX = 6
-};
-
 static void set_yaw_inputs(TwentySimController *controller,
                            const JiwyCalibration *calibration,
                            EncoderSample encoders,
@@ -33,28 +20,6 @@ static void set_pitch_inputs(TwentySimController *controller,
     controller->pitch_u[0] = 0.0;
     controller->pitch_u[1] = jiwy_clamp_pitch_target(calibration, target_rad);
     controller->pitch_u[2] = jiwy_pitch_rad(calibration, encoders.pitch);
-}
-
-static void override_yaw_parameters(void)
-{
-    yaw_P[PARAM_CORR_GAIN] = JIWY_YAW_CORR_GAIN;
-    yaw_P[PARAM_KP] = JIWY_YAW_KP;
-    yaw_P[PARAM_TAU_D] = JIWY_YAW_TAU_D;
-    yaw_P[PARAM_BETA] = JIWY_YAW_BETA;
-    yaw_P[PARAM_TAU_I] = JIWY_YAW_TAU_I;
-    yaw_P[PARAM_OUTPUT_MIN] = JIWY_YAW_OUTPUT_MIN;
-    yaw_P[PARAM_OUTPUT_MAX] = JIWY_YAW_OUTPUT_MAX;
-}
-
-static void override_pitch_parameters(void)
-{
-    pitch_P[PARAM_CORR_GAIN] = JIWY_PITCH_CORR_GAIN;
-    pitch_P[PARAM_KP] = JIWY_PITCH_KP;
-    pitch_P[PARAM_TAU_D] = JIWY_PITCH_TAU_D;
-    pitch_P[PARAM_BETA] = JIWY_PITCH_BETA;
-    pitch_P[PARAM_TAU_I] = JIWY_PITCH_TAU_I;
-    pitch_P[PARAM_OUTPUT_MIN] = JIWY_PITCH_OUTPUT_MIN;
-    pitch_P[PARAM_OUTPUT_MAX] = JIWY_PITCH_OUTPUT_MAX;
 }
 
 void twentysim_controller_init(TwentySimController *controller,
@@ -83,9 +48,6 @@ void twentysim_controller_init(TwentySimController *controller,
 
     YawInitializeSubmodel(controller->yaw_u, controller->yaw_y, 0.0);
     PitchInitializeSubmodel(controller->pitch_u, controller->pitch_y, 0.0);
-
-    override_yaw_parameters();
-    override_pitch_parameters();
 }
 
 ControllerOutput twentysim_controller_step(TwentySimController *controller,

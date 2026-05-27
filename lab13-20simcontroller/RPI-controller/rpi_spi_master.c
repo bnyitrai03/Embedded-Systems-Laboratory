@@ -15,7 +15,7 @@ static int spi_open_device(unsigned spi_channel,
 {
     int fd;
     uint8_t spi_mode = (uint8_t)(spi_flags & 0x3u);
-    uint8_t spi_bits = 32;
+    uint8_t spi_bits = 8;
     char dev[32];
 
     /* The lab FPGA is wired as /dev/spidev0.<channel> on the Raspberry Pi. */
@@ -52,8 +52,9 @@ static int spi_transfer(RpiSpiComm *spi, uint8_t tx[4], uint8_t rx[4])
     struct spi_ioc_transfer transfer;
 
     /*
-     * Protocol words are packed as bytes in control_protocol.c. Keep spidev at
-     * 32 bits/word so byte order is explicit and portable across SPI drivers.
+     * Protocol words are packed as four big-endian bytes. Keep spidev at
+     * 8 bits/word so the byte buffer is shifted exactly as tx[0]..tx[3] with
+     * CS held low for the whole 4-byte transfer.
      */
     memset(&transfer, 0, sizeof(transfer));
     transfer.tx_buf = (unsigned long)tx;
@@ -61,7 +62,7 @@ static int spi_transfer(RpiSpiComm *spi, uint8_t tx[4], uint8_t rx[4])
     transfer.len = 4;
     transfer.speed_hz = spi->speed_hz;
     transfer.delay_usecs = 0;
-    transfer.bits_per_word = 32;
+    transfer.bits_per_word = 8;
     transfer.cs_change = 0;
 
     if (ioctl(spi->fd, SPI_IOC_MESSAGE(1), &transfer) < 1) {

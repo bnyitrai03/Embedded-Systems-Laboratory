@@ -40,6 +40,7 @@
 /* 20-sim include files */
 #include "yaw_model.h"
 #include "yaw_funcs.h"
+#include "../jiwy_20sim_tuning.h"
 
 /* the global variables */
 YawDouble yaw_start_time = 0.0;
@@ -109,13 +110,13 @@ YawString yaw_rate_names[] = {
 void YawModelInitialize_parameters(void)
 {
 	/* set the parameters */
-	yaw_P[0] = 0.0;		/* corrGain\K */
-	yaw_P[1] = 2.6;		/* PID1\kp */
-	yaw_P[2] = 0.05;		/* PID1\tauD */
-	yaw_P[3] = 0.17;		/* PID1\beta */
-	yaw_P[4] = 9.0;		/* PID1\tauI */
-	yaw_P[5] = -0.99;		/* SignalLimiter2\minimum */
-	yaw_P[6] = 0.99;		/* SignalLimiter2\maximum */
+	yaw_P[0] = JIWY_YAW_CORR_GAIN;		/* corrGain\K */
+	yaw_P[1] = JIWY_YAW_KP;		/* PID1\kp */
+	yaw_P[2] = JIWY_YAW_TAU_D;		/* PID1\tauD */
+	yaw_P[3] = JIWY_YAW_BETA;		/* PID1\beta */
+	yaw_P[4] = JIWY_YAW_TAU_I;		/* PID1\tauI */
+	yaw_P[5] = JIWY_YAW_OUTPUT_MIN;		/* SignalLimiter2\minimum */
+	yaw_P[6] = JIWY_YAW_OUTPUT_MAX;		/* SignalLimiter2\maximum */
 
 }
 #if (7 > 8192) && defined _MSC_VER
