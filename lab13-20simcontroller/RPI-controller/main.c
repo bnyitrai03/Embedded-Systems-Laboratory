@@ -82,6 +82,11 @@ int main(int argc, char *argv[])
     signal(SIGINT, handle_signal);
     signal(SIGTERM, handle_signal);
 
+    /*
+     * All runtime behavior goes through MotorComm. Today that backend is
+     * Raspberry Pi spidev, but homing and control_loop do not depend on spidev
+     * details.
+     */
     result = rpi_spi_comm_open(&spi,
                                &comm,
                                RPI_SPI_DEFAULT_CHANNEL,
@@ -101,6 +106,11 @@ int main(int argc, char *argv[])
     printf("TX protocol: yaw[dir enable pwm14], then pitch[dir enable pwm14]\n");
     printf("RX protocol: signed int16 yaw encoder, then signed int16 pitch encoder\n");
 
+    /*
+     * Homing defines software zero. Do not initialize the generated 20-sim
+     * controller before this point, because encoder feedback would still be in
+     * raw hardware coordinates.
+     */
     result = homing_run(&comm, &homing_config, &calibration, &keep_running);
     motor_comm_exchange(&comm, protocol_stop_command(), 0);
 
@@ -127,6 +137,10 @@ int main(int argc, char *argv[])
         double controller_step_size_s =
             (double)control_config.sample_period_us / 1000000.0;
 
+        /*
+         * Seed the generated controller with the first post-homing feedback
+         * sample so its initial error is consistent with the software home.
+         */
         result = motor_comm_exchange(&comm,
                                      protocol_stop_command(),
                                      &initial_encoders);
@@ -145,6 +159,7 @@ int main(int argc, char *argv[])
                                   hold_target.yaw_target_rad,
                                   hold_target.pitch_target_rad);
 
+        /* The target provider is intentionally replaceable for future vision. */
         printf("Starting fixed target control loop at yaw=0 rad, pitch=0 rad\n");
         result = control_loop_run(&comm,
                                   &controller,

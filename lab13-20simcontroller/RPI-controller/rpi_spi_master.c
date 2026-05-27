@@ -18,6 +18,7 @@ static int spi_open_device(unsigned spi_channel,
     uint8_t spi_bits = 32;
     char dev[32];
 
+    /* The lab FPGA is wired as /dev/spidev0.<channel> on the Raspberry Pi. */
     snprintf(dev, sizeof(dev), "/dev/spidev0.%u", spi_channel);
 
     fd = open(dev, O_RDWR);
@@ -115,6 +116,7 @@ int rpi_spi_comm_open(RpiSpiComm *spi,
     spi->speed_hz = speed_hz;
     spi->channel = channel;
 
+    /* Bind the spidev implementation behind the generic MotorComm interface. */
     comm->context = spi;
     comm->exchange = rpi_spi_exchange;
     comm->close = rpi_spi_close_context;

@@ -6,6 +6,7 @@
 #include "jiwy_config.h"
 
 enum {
+    /* Generated parameter order from yaw_model.c and pitch_model.c. */
     PARAM_CORR_GAIN = 0,
     PARAM_KP = 1,
     PARAM_TAU_D = 2,
@@ -66,6 +67,11 @@ void twentysim_controller_init(TwentySimController *controller,
     yaw_step_size = step_size_s;
     pitch_step_size = step_size_s;
 
+    /*
+     * Match the generated example mains: fill u/y arrays, initialize the
+     * submodels, then call CalculateSubmodel on each loop sample. The generated
+     * integrators maintain yaw_time and pitch_time globally.
+     */
     set_yaw_inputs(controller,
                    calibration,
                    initial_encoders,
@@ -95,6 +101,11 @@ ControllerOutput twentysim_controller_step(TwentySimController *controller,
                          controller->yaw_y,
                          yaw_time);
 
+    /*
+     * The generated pitch submodel still has a correction input at u[0].
+     * The wrapper intentionally keeps that hidden and fixed at zero so the
+     * application-level control target remains yaw/pitch position only.
+     */
     set_pitch_inputs(controller,
                      calibration,
                      encoders,
@@ -103,6 +114,7 @@ ControllerOutput twentysim_controller_step(TwentySimController *controller,
                            controller->pitch_y,
                            pitch_time);
 
+    /* Yaw exposes {corr, out}; pitch exposes {out}. */
     output.yaw = controller->yaw_y[1];
     output.pitch = controller->pitch_y[0];
     return output;

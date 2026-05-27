@@ -72,6 +72,7 @@ static int stop_and_settle(MotorComm *comm,
     EncoderSample ignored;
     int result;
 
+    /* Send several stop frames so the motor and sampled encoder count settle. */
     for (i = 0; i < config->settle_samples && *keep_running; ++i) {
         result = motor_comm_exchange(comm, protocol_stop_command(), &ignored);
         if (result < 0) {
@@ -101,6 +102,11 @@ static int home_one_axis(MotorComm *comm,
         return result;
     }
 
+    /*
+     * The axis is considered moving only when the encoder changes by at least
+     * movement_threshold_counts. Smaller changes are treated as stagnation near
+     * the mechanical stop.
+     */
     last_moving_count = axis_count(sample, axis);
     printf("Homing %s from encoder count %d\n", axis_name(axis), last_moving_count);
 
@@ -152,6 +158,7 @@ int homing_run(MotorComm *comm,
 {
     int result;
 
+    /* Home axes one at a time so only one motor is pushing a stop. */
     result = home_one_axis(comm,
                            config,
                            AXIS_YAW,

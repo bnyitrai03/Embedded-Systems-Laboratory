@@ -39,6 +39,10 @@ static int sleep_until(struct timespec deadline)
 {
     int result;
 
+    /*
+     * Raspberry Pi/Linux absolute sleep. TIMER_ABSTIME keeps the loop anchored
+     * to the original schedule instead of adding work time to every period.
+     */
     do {
         result = clock_nanosleep(CLOCK_MONOTONIC,
                                  TIMER_ABSTIME,
@@ -85,6 +89,10 @@ int control_loop_run(MotorComm *comm,
         return -errno;
     }
 
+    /*
+     * next_deadline is advanced before each sample. That means sample N targets
+     * start_time + N * period, independent of how long previous samples took.
+     */
     while (*keep_running) {
         struct timespec work_start;
         struct timespec work_end;
@@ -148,11 +156,18 @@ int control_loop_run(MotorComm *comm,
         }
 
         ++sample_index;
-        if (lateness_us <= 0) {
-            result = sleep_until(next_deadline);
-            if (result != 0) {
-                return -result;
-            }
+        if (lateness_us > 0) {
+            /*
+             * If the sample has already missed its deadline, skip sleeping.
+             * The next iteration advances to the next absolute deadline and
+             * tries to recover without accumulating drift.
+             */
+            continue;
+        }
+
+        result = sleep_until(next_deadline);
+        if (result != 0) {
+            return -result;
         }
     }
 
