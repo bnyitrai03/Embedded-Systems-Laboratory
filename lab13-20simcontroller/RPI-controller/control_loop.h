@@ -3,13 +3,13 @@
 
 #include <signal.h>
 
-#include "controller_adapter.h"
+#include "jiwy_calibration.h"
 #include "motor_comm.h"
+#include "twentysim_controller.h"
 
 typedef struct {
     double yaw_target_rad;
     double pitch_target_rad;
-    double pitch_correction_rad;
 } ControlTarget;
 
 typedef struct {
@@ -33,6 +33,7 @@ int control_loop_fixed_target(void *context,
                               EncoderSample encoders,
                               ControlTarget *target);
 int control_loop_run(MotorComm *comm,
+                     TwentySimController *controller,
                      const JiwyCalibration *calibration,
                      const ControlLoopConfig *config,
                      ControlTargetProvider target_provider,

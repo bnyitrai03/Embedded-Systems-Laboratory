@@ -4,7 +4,7 @@
 #include <signal.h>
 #include <stdint.h>
 
-#include "controller_adapter.h"
+#include "jiwy_calibration.h"
 #include "motor_comm.h"
 
 typedef struct {

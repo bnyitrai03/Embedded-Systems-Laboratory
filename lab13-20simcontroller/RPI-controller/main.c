@@ -5,9 +5,10 @@
 #include <string.h>
 
 #include "control_loop.h"
-#include "controller_adapter.h"
 #include "homing.h"
+#include "jiwy_calibration.h"
 #include "rpi_spi_master.h"
+#include "twentysim_controller.h"
 
 static volatile sig_atomic_t keep_running = 1;
 
@@ -53,7 +54,7 @@ int main(int argc, char *argv[])
     RpiSpiComm spi = {.fd = -1, .speed_hz = 0, .channel = 0};
     MotorComm comm;
     ControlLoopConfig control_config = control_loop_default_config();
-    ControlTarget hold_target = {0.0, 0.0, 0.0};
+    ControlTarget hold_target = {0.0, 0.0};
     unsigned home_pwm;
     int run_hold_loop = 0;
     int result;
@@ -94,8 +95,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    controller_20sim_init(0.01);
-
     printf("Starting homing over SPI channel %u at %u Hz\n",
            RPI_SPI_DEFAULT_CHANNEL,
            speed_hz);
@@ -123,8 +122,32 @@ int main(int argc, char *argv[])
            calibration.pitch_home_count);
 
     if (run_hold_loop) {
+        EncoderSample initial_encoders;
+        TwentySimController controller;
+        double controller_step_size_s =
+            (double)control_config.sample_period_us / 1000000.0;
+
+        result = motor_comm_exchange(&comm,
+                                     protocol_stop_command(),
+                                     &initial_encoders);
+        if (result < 0) {
+            fprintf(stderr,
+                    "Failed to read initial encoders: %s\n",
+                    strerror(-result));
+            motor_comm_close(&comm);
+            return 1;
+        }
+
+        twentysim_controller_init(&controller,
+                                  controller_step_size_s,
+                                  &calibration,
+                                  initial_encoders,
+                                  hold_target.yaw_target_rad,
+                                  hold_target.pitch_target_rad);
+
         printf("Starting fixed target control loop at yaw=0 rad, pitch=0 rad\n");
         result = control_loop_run(&comm,
+                                  &controller,
                                   &calibration,
                                   &control_config,
                                   control_loop_fixed_target,

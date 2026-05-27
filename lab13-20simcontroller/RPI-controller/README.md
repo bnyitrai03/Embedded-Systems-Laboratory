@@ -1,18 +1,19 @@
 # RPI controller architecture
 
-This folder keeps the 20-sim generated controllers behind small local adapters.
+This folder keeps the 20-sim generated controllers behind small local wrappers.
 See `ARCHITECTURE.md` for the control/data-flow explanation.
 
 - `control_protocol.*`: packs/unpacks the 32-bit motor/encoder frame.
 - `motor_comm.h`: communication interface used by the controller application.
 - `rpi_spi_master.*`: Raspberry Pi spidev implementation of that interface.
-- `controller_adapter.*`: converts encoder counts to radians, calls the generated yaw/pitch controllers, and converts normalized controller output to PWM commands.
+- `jiwy_calibration.*`: converts encoder counts to radians and owns software home offsets, travel limits, and target clamps.
+- `twentysim_controller.*`: initializes and steps the generated yaw/pitch 20-sim submodels, applies PID overrides, and converts normalized controller output to PWM commands.
 - `control_loop.*`: time-driven position-control loop with a replaceable target provider.
 - `homing.*`: sequential yaw/pitch software homing routine.
-- `main.c`: starts SPI, runs homing, disables the motors, and prints the software home offsets.
+- `main.c`: starts SPI, runs homing, initializes the controller after homing when `--hold` is requested, and prints the software home offsets.
 - `jiwy_config.h`: measured encoder travel calibration and initial software limits.
 - PID tuning values also live in `jiwy_config.h`; do not edit generated
-  `controller/*_controller.c` files for tuning.
+  `controller/yaw_controller/*` or `controller/pitch_controller/*` files for tuning.
 
 The SPI frame is big-endian:
 
@@ -87,7 +88,7 @@ pitch:  684 counts over 175 degrees
 
 Edit `jiwy_config.h` when you remeasure the setup or want to test different
 travel assumptions. These values affect count-to-radian conversion and the
-target clamps used by the 20-sim controller adapter.
+target clamps used by the calibration and 20-sim controller wrapper.
 
 For controller tuning, edit the named PID constants in `jiwy_config.h`, rebuild,
 and test again. The generated 20-sim parameters are:

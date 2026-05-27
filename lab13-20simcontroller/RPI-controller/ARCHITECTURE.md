@@ -9,7 +9,7 @@ independently.
 ```text
 target provider
     -> ControlTarget in radians
-    -> controller_20sim_step()
+    -> twentysim_controller_step()
     -> normalized yaw/pitch outputs
     -> controller_output_to_command()
     -> MotorCommand
@@ -26,12 +26,12 @@ FPGA encoder counters
 ## Startup sequence
 
 1. `main.c` opens the selected `MotorComm` backend.
-2. `controller_20sim_init()` initializes the generated yaw and pitch models and
-   copies the tuneable constants from `jiwy_config.h`.
-3. `homing_run()` moves yaw and pitch one at a time to the configured mechanical
+2. `homing_run()` moves yaw and pitch one at a time to the configured mechanical
    home direction and records the encoder counts as software zero.
-4. If `--hold` is supplied, `control_loop_run()` starts a 100 Hz control loop
-   using a fixed target of yaw `0 rad`, pitch `0 rad`.
+3. If `--hold` is supplied, `main.c` reads the current encoder sample,
+   initializes `TwentySimController` with that feedback and the initial target,
+   then starts `control_loop_run()` at 100 Hz using a fixed target of yaw
+   `0 rad`, pitch `0 rad`.
 
 ## Extension points
 
@@ -70,16 +70,17 @@ the provider convert that latest value into yaw/pitch target radians.
 - yaw and pitch PID constants
 - controller output clamps
 
-The generated `controller/*_controller.c` files should stay replaceable. If
-20-sim code is regenerated, copy the new files in and keep local tuning in
-`jiwy_config.h`.
+The generated files in `controller/yaw_controller/` and
+`controller/pitch_controller/` should stay replaceable. If 20-sim code is
+regenerated, copy the new files in and keep local tuning in `jiwy_config.h`.
 
 ## Timing assumptions
 
-The generated controllers currently use a 10 ms sample time. `main.c` calls:
+The generated controllers currently use a 10 ms sample time. `main.c` derives
+the controller step size from `control_loop_default_config()` and passes it to:
 
 ```c
-controller_20sim_init(0.01);
+twentysim_controller_init(&controller, 0.01, ...);
 ```
 
 and `control_loop_default_config()` uses `10000 us`. Keep these matched unless

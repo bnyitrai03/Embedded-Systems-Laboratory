@@ -1,6 +1,6 @@
 CC ?= gcc
 CFLAGS ?= -O2 -Wall -Wextra -std=c11
-CPPFLAGS ?= -I. -D_POSIX_C_SOURCE=200809L
+CPPFLAGS ?= -I. -Icontroller/yaw_controller -Icontroller/pitch_controller -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L
 LDLIBS ?= -lm
 
 TARGET = jiwy_controller
@@ -9,12 +9,18 @@ SRCS = \
 	main.c \
 	control_loop.c \
 	control_protocol.c \
-	controller_adapter.c \
+	jiwy_calibration.c \
+	twentysim_controller.c \
 	homing.c \
 	rpi_spi_master.c \
-	controller/pitch_controller.c \
-	controller/yaw_controller.c \
-	controller/xxfuncs.c
+	controller/yaw_controller/yaw_model.c \
+	controller/yaw_controller/yaw_integ.c \
+	controller/yaw_controller/yaw_funcs.c \
+	controller/yaw_controller/yaw_submod.c \
+	controller/pitch_controller/pitch_model.c \
+	controller/pitch_controller/pitch_integ.c \
+	controller/pitch_controller/pitch_funcs.c \
+	controller/pitch_controller/pitch_submod.c
 
 OBJS = $(SRCS:.c=.o)
 
