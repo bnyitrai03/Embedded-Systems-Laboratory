@@ -8,7 +8,7 @@ See `ARCHITECTURE.md` for the control/data-flow explanation.
 - `rpi_spi_master.*`: Raspberry Pi spidev implementation of that interface.
 - `jiwy_calibration.*`: converts encoder counts to radians and owns software home offsets, travel limits, and target clamps.
 - `twentysim_controller.*`: initializes and steps the generated yaw/pitch 20-sim submodels and converts normalized controller output to PWM commands.
-- `control_loop.*`: time-driven position-control loop with a replaceable target provider.
+- `control_loop.*`: time-driven position-control loop for one yaw/pitch target.
 - `homing.*`: sequential yaw/pitch software homing routine.
 - `main.c`: starts SPI, runs homing, initializes the controller after homing when `--hold` is requested, and prints the software home offsets.
 - `jiwy_config.h`: measured encoder travel calibration and initial software limits.
@@ -104,6 +104,7 @@ tauI    integral time; larger means weaker/slower integral action
 min/max normalized controller output clamp, later mapped to PWM
 ```
 
-To add vision later, implement a new `ControlTargetProvider` and pass it to
-`control_loop_run`. The motor loop can stay at 100 Hz while the vision provider
-reuses the latest detected target between camera frames.
+To add vision later, replace the fixed `ControlTarget` passed to
+`control_loop_run` with target values derived from the latest camera result.
+The motor loop can stay at 100 Hz while the vision code reuses the latest
+detected target between camera frames.

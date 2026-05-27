@@ -53,30 +53,14 @@ static int sleep_until(struct timespec deadline)
     return result;
 }
 
-int control_loop_fixed_target(void *context,
-                              const JiwyCalibration *calibration,
-                              EncoderSample encoders,
-                              ControlTarget *target)
-{
-    const ControlTarget *fixed_target = (const ControlTarget *)context;
-
-    (void)calibration;
-    (void)encoders;
-
-    *target = *fixed_target;
-    return 0;
-}
-
 int control_loop_run(MotorComm *comm,
                      TwentySimController *controller,
                      const JiwyCalibration *calibration,
                      const ControlLoopConfig *config,
-                     ControlTargetProvider target_provider,
-                     void *target_context,
+                     ControlTarget target,
                      volatile sig_atomic_t *keep_running)
 {
     EncoderSample encoders;
-    ControlTarget target;
     ControllerOutput output;
     MotorCommand command = protocol_stop_command();
     unsigned sample_index = 0;
@@ -114,11 +98,6 @@ int control_loop_run(MotorComm *comm,
          * separate "read encoders" transaction.
          */
         result = motor_comm_exchange(comm, command, &encoders);
-        if (result < 0) {
-            return result;
-        }
-
-        result = target_provider(target_context, calibration, encoders, &target);
         if (result < 0) {
             return result;
         }

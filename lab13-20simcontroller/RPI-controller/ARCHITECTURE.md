@@ -7,7 +7,7 @@ independently.
 ## Data flow
 
 ```text
-target provider
+control target
     -> ControlTarget in radians
     -> twentysim_controller_step()
     -> normalized yaw/pitch outputs
@@ -47,19 +47,20 @@ The current backend is `rpi_spi_master.c`. A DE10/Avalon backend should keep the
 same `MotorCommand` and `EncoderSample` structures so the controller and vision
 code do not need to change.
 
-### Target provider
+### Control target
 
-`control_loop.h` defines `ControlTargetProvider`. This is where future behavior
-should be plugged in:
+`control_loop_run()` currently accepts one fixed `ControlTarget`. This keeps the
+hold loop simple during motor bring-up. Future behavior can replace that fixed
+target with values from:
 
 - fixed-position hold
 - manual joystick input
 - scripted setpoints
 - vision target tracking
 
-A vision provider should avoid blocking the motor loop. The expected pattern is
-to process camera frames elsewhere, store the latest valid image error, and let
-the provider convert that latest value into yaw/pitch target radians.
+Vision should avoid blocking the motor loop. The expected pattern is to process
+camera frames elsewhere, store the latest valid image error, and let the control
+code convert that latest value into yaw/pitch target radians.
 
 ## Calibration and tuning
 

@@ -159,14 +159,13 @@ int main(int argc, char *argv[])
                                   hold_target.yaw_target_rad,
                                   hold_target.pitch_target_rad);
 
-        /* The target provider is intentionally replaceable for future vision. */
+        /* Vision can later replace this fixed target with live target updates. */
         printf("Starting fixed target control loop at yaw=0 rad, pitch=0 rad\n");
         result = control_loop_run(&comm,
                                   &controller,
                                   &calibration,
                                   &control_config,
-                                  control_loop_fixed_target,
-                                  &hold_target,
+                                  hold_target,
                                   &keep_running);
         motor_comm_exchange(&comm, protocol_stop_command(), 0);
 
