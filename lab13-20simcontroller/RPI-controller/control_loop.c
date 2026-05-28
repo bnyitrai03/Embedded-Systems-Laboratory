@@ -10,6 +10,7 @@ ControlLoopConfig control_loop_default_config(void)
 
     config.sample_period_us = 10000;
     config.log_period_samples = 100;
+    config.csv_log_path = 0;
     return config;
 }
 
@@ -63,14 +64,35 @@ int control_loop_run(MotorComm *comm,
     EncoderSample encoders;
     ControllerOutput output;
     MotorCommand command = protocol_stop_command();
+    FILE *csv_log = 0;
     unsigned sample_index = 0;
     unsigned overrun_count = 0;
     struct timespec next_deadline;
+    struct timespec loop_start;
     int result;
 
     result = clock_gettime(CLOCK_MONOTONIC, &next_deadline);
     if (result < 0) {
         return -errno;
+    }
+    loop_start = next_deadline;
+
+    if (config->csv_log_path != 0) {
+        csv_log = fopen(config->csv_log_path, "w");
+        if (csv_log == 0) {
+            return -errno;
+        }
+
+        fprintf(csv_log,
+                "sample,time_s,"
+                "yaw_encoder,pitch_encoder,"
+                "yaw_target_rad,pitch_target_rad,"
+                "yaw_actual_rad,pitch_actual_rad,"
+                "yaw_error_rad,pitch_error_rad,"
+                "yaw_output,pitch_output,"
+                "yaw_pwm,pitch_pwm,"
+                "yaw_dir,pitch_dir,"
+                "work_us,lateness_us,overruns\n");
     }
 
     /*
@@ -80,6 +102,8 @@ int control_loop_run(MotorComm *comm,
     while (*keep_running) {
         struct timespec work_start;
         struct timespec work_end;
+        double yaw_actual_rad;
+        double pitch_actual_rad;
         long work_us;
         long lateness_us;
 
@@ -88,6 +112,9 @@ int control_loop_run(MotorComm *comm,
 
         result = clock_gettime(CLOCK_MONOTONIC, &work_start);
         if (result < 0) {
+            if (csv_log != 0) {
+                fclose(csv_log);
+            }
             return -errno;
         }
 
@@ -99,6 +126,9 @@ int control_loop_run(MotorComm *comm,
          */
         result = motor_comm_exchange(comm, command, &encoders);
         if (result < 0) {
+            if (csv_log != 0) {
+                fclose(csv_log);
+            }
             return result;
         }
 
@@ -108,9 +138,14 @@ int control_loop_run(MotorComm *comm,
                                            target.yaw_target_rad,
                                            target.pitch_target_rad);
         command = controller_output_to_command(output);
+        yaw_actual_rad = jiwy_yaw_rad(calibration, encoders.yaw);
+        pitch_actual_rad = jiwy_pitch_rad(calibration, encoders.pitch);
 
         result = clock_gettime(CLOCK_MONOTONIC, &work_end);
         if (result < 0) {
+            if (csv_log != 0) {
+                fclose(csv_log);
+            }
             return -errno;
         }
 
@@ -122,16 +157,48 @@ int control_loop_run(MotorComm *comm,
 
         if (config->log_period_samples != 0 &&
             sample_index % config->log_period_samples == 0) {
-            printf("enc yaw=%d pitch=%d target yaw=%.4f pitch=%.4f out yaw=%.3f pitch=%.3f work=%ldus late=%ldus overruns=%u\n",
+            printf("enc yaw=%d pitch=%d target yaw=%.4f pitch=%.4f actual yaw=%.4f pitch=%.4f work=%ldus late=%ldus overruns=%u\n",
                    encoders.yaw,
                    encoders.pitch,
                    target.yaw_target_rad,
                    target.pitch_target_rad,
-                   output.yaw,
-                   output.pitch,
+                   yaw_actual_rad,
+                   pitch_actual_rad,
                    work_us,
                    lateness_us > 0 ? lateness_us : 0,
                    overrun_count);
+        }
+
+        if (csv_log != 0) {
+            fprintf(csv_log,
+                    "%u,%.6f,"
+                    "%d,%d,"
+                    "%.9f,%.9f,"
+                    "%.9f,%.9f,"
+                    "%.9f,%.9f,"
+                    "%.9f,%.9f,"
+                    "%u,%u,"
+                    "%u,%u,"
+                    "%ld,%ld,%u\n",
+                    sample_index,
+                    (double)timespec_diff_us(work_start, loop_start) / 1000000.0,
+                    encoders.yaw,
+                    encoders.pitch,
+                    target.yaw_target_rad,
+                    target.pitch_target_rad,
+                    yaw_actual_rad,
+                    pitch_actual_rad,
+                    target.yaw_target_rad - yaw_actual_rad,
+                    target.pitch_target_rad - pitch_actual_rad,
+                    output.yaw,
+                    output.pitch,
+                    command.yaw.pwm,
+                    command.pitch.pwm,
+                    command.yaw.direction,
+                    command.pitch.direction,
+                    work_us,
+                    lateness_us > 0 ? lateness_us : 0,
+                    overrun_count);
         }
 
         ++sample_index;
@@ -146,8 +213,15 @@ int control_loop_run(MotorComm *comm,
 
         result = sleep_until(next_deadline);
         if (result != 0) {
+            if (csv_log != 0) {
+                fclose(csv_log);
+            }
             return -result;
         }
+    }
+
+    if (csv_log != 0) {
+        fclose(csv_log);
     }
 
     return motor_comm_exchange(comm, protocol_stop_command(), 0);

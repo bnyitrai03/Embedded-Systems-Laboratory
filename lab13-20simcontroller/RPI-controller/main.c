@@ -36,11 +36,17 @@ static unsigned parse_unsigned_arg(const char *text, unsigned fallback)
     return (unsigned)value;
 }
 
+static int is_option_arg(const char *text)
+{
+    return text != 0 && text[0] == '-' && text[1] == '-';
+}
+
 static void print_usage(const char *program)
 {
     fprintf(stderr,
-            "Usage: %s [spi_speed_hz] [home_pwm] [--hold]\n"
-            "Default: speed=%u Hz, home_pwm=1500 of %u\n",
+            "Usage: %s [spi_speed_hz] [home_pwm] [--hold] [--log csv_path]\n"
+            "Default: speed=%u Hz, home_pwm=1500 of %u\n"
+            "When --hold is used without --log, CSV is written to pid_log.csv.\n",
             program,
             RPI_SPI_DEFAULT_SPEED_HZ,
             MOTOR_PWM_MAX);
@@ -55,29 +61,43 @@ int main(int argc, char *argv[])
     MotorComm comm;
     ControlLoopConfig control_config = control_loop_default_config();
     ControlTarget hold_target = {0.0, 0.0};
+    const char *csv_log_path = 0;
     unsigned home_pwm;
     int run_hold_loop = 0;
     int result;
+    int arg_index = 1;
 
-    if (argc > 4) {
-        print_usage(argv[0]);
-        return 2;
+    if (arg_index < argc && !is_option_arg(argv[arg_index])) {
+        speed_hz = parse_unsigned_arg(argv[arg_index], speed_hz);
+        ++arg_index;
     }
 
-    if (argc > 3) {
-        if (strcmp(argv[3], "--hold") != 0) {
+    if (arg_index < argc && !is_option_arg(argv[arg_index])) {
+        home_pwm = parse_unsigned_arg(argv[arg_index], homing_config.pwm);
+        ++arg_index;
+    } else {
+        home_pwm = homing_config.pwm;
+    }
+
+    for (; arg_index < argc; ++arg_index) {
+        if (strcmp(argv[arg_index], "--hold") == 0) {
+            run_hold_loop = 1;
+        } else if (strcmp(argv[arg_index], "--log") == 0 && arg_index + 1 < argc) {
+            csv_log_path = argv[++arg_index];
+        } else {
             print_usage(argv[0]);
             return 2;
         }
-        run_hold_loop = 1;
     }
 
-    speed_hz = parse_unsigned_arg(argc > 1 ? argv[1] : 0, speed_hz);
-    home_pwm = parse_unsigned_arg(argc > 2 ? argv[2] : 0, homing_config.pwm);
     if (home_pwm > MOTOR_PWM_MAX) {
         home_pwm = MOTOR_PWM_MAX;
     }
     homing_config.pwm = (uint16_t)home_pwm;
+    if (run_hold_loop && csv_log_path == 0) {
+        csv_log_path = "pid_log.csv";
+    }
+    control_config.csv_log_path = csv_log_path;
 
     signal(SIGINT, handle_signal);
     signal(SIGTERM, handle_signal);
@@ -161,6 +181,10 @@ int main(int argc, char *argv[])
 
         /* Vision can later replace this fixed target with live target updates. */
         printf("Starting fixed target control loop at yaw=0 rad, pitch=0 rad\n");
+        if (control_config.csv_log_path != 0) {
+            printf("Writing control-loop CSV log to %s\n",
+                   control_config.csv_log_path);
+        }
         result = control_loop_run(&comm,
                                   &controller,
                                   &calibration,

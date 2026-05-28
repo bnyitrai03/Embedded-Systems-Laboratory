@@ -114,3 +114,34 @@ To add vision later, replace the fixed `ControlTarget` passed to
 `control_loop_run` with target values derived from the latest camera result.
 The motor loop can stay at 100 Hz while the vision code reuses the latest
 detected target between camera frames.
+# PID CSV logging
+
+When running the hold loop, the controller writes a CSV log by default:
+
+```bash
+./jiwy_controller 100000 500 --hold
+```
+
+This creates:
+
+```text
+pid_log.csv
+```
+
+To choose another path:
+
+```bash
+./jiwy_controller 100000 500 --hold --log yaw_pitch_test.csv
+```
+
+Plot after the run:
+
+```bash
+python3 plot_pid_log.py pid_log.csv
+```
+
+Install plotting dependencies if needed:
+
+```bash
+python3 -m pip install matplotlib
+```

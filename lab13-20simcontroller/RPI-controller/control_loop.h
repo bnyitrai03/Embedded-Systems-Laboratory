@@ -26,6 +26,8 @@ typedef struct {
     unsigned sample_period_us;
     /** Print one status line every N samples; zero disables logging. */
     unsigned log_period_samples;
+    /** Optional CSV path for control-loop samples; NULL disables CSV logging. */
+    const char *csv_log_path;
 } ControlLoopConfig;
 
 /**
