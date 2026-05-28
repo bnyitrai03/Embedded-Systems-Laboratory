@@ -68,6 +68,12 @@ Build the standalone SPI smoke test:
 make smoke-test
 ```
 
+
+Usage
+```sh
+./test/spi_motor_smoke_test [speed_hz] [yaw_pwm] [yaw_dir] [pitch_pwm] [pitch_dir] [loops] [period_ms]
+```
+
 The homing routine has no limit-switch input. It moves one axis at a time with
 low PWM and treats a stable encoder count as the mechanical end stop. Keep the
 first test at low PWM and be ready to interrupt with Ctrl-C.

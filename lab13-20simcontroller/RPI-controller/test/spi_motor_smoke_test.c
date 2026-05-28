@@ -125,7 +125,6 @@ static int spi_open(const char *device, unsigned speed_hz)
 {
     int fd;
     uint8_t mode = SPI_MODE_0;
-    uint8_t bits_per_word = 8;
 
     fd = open(device, O_RDWR);
     if (fd < 0) {
@@ -133,12 +132,6 @@ static int spi_open(const char *device, unsigned speed_hz)
     }
 
     if (ioctl(fd, SPI_IOC_WR_MODE, &mode) < 0) {
-        int saved_errno = errno;
-        close(fd);
-        return -saved_errno;
-    }
-
-    if (ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits_per_word) < 0) {
         int saved_errno = errno;
         close(fd);
         return -saved_errno;
@@ -163,7 +156,12 @@ static int spi_exchange(int fd, unsigned speed_hz, const uint8_t tx[4], uint8_t 
     transfer.rx_buf = (unsigned long)rx;
     transfer.len = 4;
     transfer.speed_hz = speed_hz;
-    transfer.bits_per_word = 8;
+    /*
+     * Leave bits_per_word as 0 so spidev uses the device default, normally
+     * 8 bits. Some Raspberry Pi kernels reject SPI_IOC_WR_BITS_PER_WORD even
+     * for 8-bit transfers.
+     */
+    transfer.bits_per_word = 0;
     transfer.delay_usecs = 0;
     transfer.cs_change = 0;
 

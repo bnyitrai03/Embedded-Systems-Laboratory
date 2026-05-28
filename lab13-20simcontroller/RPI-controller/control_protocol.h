@@ -2,7 +2,7 @@
 #define CONTROL_PROTOCOL_H
 
 #include <stdint.h>
-
+#include "jiwy_config.h"
 /**
  * @file control_protocol.h
  * @brief FPGA motor command and encoder sample wire format helpers.
@@ -17,13 +17,7 @@
  *   yaw signed int16 encoder count, then pitch signed int16 encoder count.
  */
 
-/**
- * @brief Maximum PWM duty value sent by the C controller.
- *
- * The protocol field is 14 bits, but the current FPGA PWM period is 2500 ticks
- * at 50 MHz / 20 kHz. Clamp commands to that hardware duty range on the C side.
- */
-#define MOTOR_PWM_MAX 2500u
+
 
 /** @brief Motor direction bit convention used by the FPGA protocol. */
 typedef enum {

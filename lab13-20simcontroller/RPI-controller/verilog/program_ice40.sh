@@ -6,7 +6,7 @@ echo "[WARNING] DELIVERED AS IS. Understand the commands before running this scr
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 if [ -z "${ICOPROG_DIR:-}" ]; then
-    ICOPROG_DIR=~ws/icoprog
+    ICOPROG_DIR=~/ws/icoprog
 fi
 
 JSON_FILE="${SCRIPT_DIR}/ice40.json"
