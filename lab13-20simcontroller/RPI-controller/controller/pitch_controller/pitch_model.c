@@ -212,11 +212,17 @@ void PitchCalculateDynamic (void)
 	/* PID1\uD = PID1\factor * (((PID1\tauD * PID1\uD_previous) * PID1\beta + (PID1\tauD * PID1\kp) * (PID1\error - PID1\error_previous)) + (sampletime * PID1\kp) * PID1\error); */
 	pitch_R[0] = pitch_V[3] * (((pitch_P[2] * pitch_s[0]) * pitch_P[3] + (pitch_P[2] * pitch_P[1]) * (pitch_R[1] - pitch_s[1])) + (pitch_step_size * pitch_P[1]) * pitch_R[1]);
 
-	/* PID1\uI = PID1\uI_previous + (sampletime * PID1\uD) / PID1\tauI; */
-	pitch_R[2] = pitch_s[2] + (pitch_step_size * pitch_R[0]) / pitch_P[4];
+	double uI_candidate = pitch_s[2] + (pitch_step_size * pitch_R[0]) / pitch_P[4];
+    double output_candidate = uI_candidate + pitch_R[0];
 
-	/* PID1\output = PID1\uI + PID1\uD; */
-	pitch_V[2] = pitch_R[2] + pitch_R[0];
+    if ((output_candidate > pitch_P[6] && pitch_R[1] > 0.0) ||
+        (output_candidate < pitch_P[5] && pitch_R[1] < 0.0)) {
+        pitch_R[2] = pitch_s[2];
+    } else {
+        pitch_R[2] = uI_candidate;
+    }
+
+    pitch_V[2] = pitch_R[2] + pitch_R[0];
 
 	/* PlusMinus1\output = corrGain\output + PID1\output; */
 	pitch_V[4] = pitch_V[1] + pitch_V[2];

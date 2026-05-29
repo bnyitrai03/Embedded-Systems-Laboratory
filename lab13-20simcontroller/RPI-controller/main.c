@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
     MotorComm comm;
     ControlLoopConfig control_config = control_loop_default_config();
     ControlTarget hold_target = {0.0, 0.0};
+    
     const char *csv_log_path = 0;
     unsigned home_pwm;
     int run_hold_loop = 0;
@@ -157,7 +158,8 @@ int main(int argc, char *argv[])
         TwentySimController controller;
         double controller_step_size_s =
             (double)control_config.sample_period_us / 1000000.0;
-
+        hold_target.yaw_target_rad = 0.5 * (calibration.yaw_min_rad + calibration.yaw_max_rad);
+        hold_target.pitch_target_rad = 0.5 * (calibration.pitch_min_rad + calibration.pitch_max_rad);
         /*
          * Seed the generated controller with the first post-homing feedback
          * sample so its initial error is consistent with the software home.

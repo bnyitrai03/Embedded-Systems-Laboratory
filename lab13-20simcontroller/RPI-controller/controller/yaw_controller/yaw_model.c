@@ -207,11 +207,17 @@ void YawCalculateDynamic (void)
 	/* PID1\uD = PID1\factor * (((PID1\tauD * PID1\uD_previous) * PID1\beta + (PID1\tauD * PID1\kp) * (PID1\error - PID1\error_previous)) + (sampletime * PID1\kp) * PID1\error); */
 	yaw_R[0] = yaw_V[2] * (((yaw_P[2] * yaw_s[0]) * yaw_P[3] + (yaw_P[2] * yaw_P[1]) * (yaw_R[1] - yaw_s[1])) + (yaw_step_size * yaw_P[1]) * yaw_R[1]);
 
-	/* PID1\uI = PID1\uI_previous + (sampletime * PID1\uD) / PID1\tauI; */
-	yaw_R[2] = yaw_s[2] + (yaw_step_size * yaw_R[0]) / yaw_P[4];
+	double uI_candidate = yaw_s[2] + (yaw_step_size * yaw_R[0]) / yaw_P[4];
+    double output_candidate = uI_candidate + yaw_R[0];
 
-	/* PID1\output = PID1\uI + PID1\uD; */
-	yaw_V[1] = yaw_R[2] + yaw_R[0];
+    if ((output_candidate > yaw_P[6] && yaw_R[1] > 0.0) ||
+        (output_candidate < yaw_P[5] && yaw_R[1] < 0.0)) {
+        yaw_R[2] = yaw_s[2];      /* hold integrator */
+    } else {
+        yaw_R[2] = uI_candidate;  /* integrate normally */
+    }
+
+    yaw_V[1] = yaw_R[2] + yaw_R[0];
 
 	/* SignalLimiter2\output = if PID1\output < SignalLimiter2\minimum... ; */
 	yaw_V[4] = ((yaw_V[1] < yaw_P[5]) ? 
