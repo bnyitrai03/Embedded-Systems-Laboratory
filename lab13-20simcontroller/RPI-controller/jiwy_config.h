@@ -10,20 +10,18 @@
 /**
  * @brief Maximum PWM duty value sent by the C controller.
  *
- * The protocol field is 14 bits, but the current FPGA PWM period is 2500 ticks
- * at 50 MHz / 20 kHz. Clamp commands to that hardware duty range on the C side.
+ * The FPGA PWM period is 2500 ticks at 50 MHz / 20 kHz, but the controller
+ * intentionally limits commands to 250 ticks for safer lab bring-up.
  */
 #define MOTOR_PWM_MAX 250u
 
 
 /*
- * Measured by driving each axis from one mechanical limit to the other.
- * Tune these values per physical JIWY setup.
+ * Physical angular travel between the two mechanical stops.
+ * Encoder count travel is measured during homing.
  */
-#define JIWY_YAW_TRAVEL_COUNTS 10861.0
 #define JIWY_YAW_TRAVEL_DEGREES 240.0
 
-#define JIWY_PITCH_TRAVEL_COUNTS 13569.0
 #define JIWY_PITCH_TRAVEL_DEGREES 240.0
 
 

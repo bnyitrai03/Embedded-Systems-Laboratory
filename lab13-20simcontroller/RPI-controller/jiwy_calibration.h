@@ -36,9 +36,21 @@ typedef struct {
 
 /**
  * @brief Build default calibration from jiwy_config.h.
- * @return Calibration with measured counts-per-radian values and zero homes.
+ * @return Calibration with zero homes and travel limits.
  */
 JiwyCalibration jiwy_default_calibration(void);
+
+/**
+ * @brief Update yaw count-to-radian calibration from measured encoder travel.
+ */
+void jiwy_set_yaw_travel_counts(JiwyCalibration *calibration,
+                                unsigned travel_counts);
+
+/**
+ * @brief Update pitch count-to-radian calibration from measured encoder travel.
+ */
+void jiwy_set_pitch_travel_counts(JiwyCalibration *calibration,
+                                  unsigned travel_counts);
 
 /**
  * @brief Convert a raw yaw encoder count to radians relative to yaw home.

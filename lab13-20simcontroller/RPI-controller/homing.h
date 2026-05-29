@@ -38,14 +38,15 @@ typedef struct {
 HomingConfig homing_default_config(void);
 
 /**
- * @brief Home yaw and pitch sequentially and update software home offsets.
+ * @brief Measure and home yaw and pitch sequentially.
  *
- * Homing assumes there are no limit switches. It drives one axis at low PWM and
- * declares home when encoder counts stop changing for stop_window_samples.
+ * Homing assumes there are no limit switches. It drives one axis at a time to
+ * both mechanical stops, declares each stop when encoder counts stagnate, then
+ * uses the measured span for runtime count-to-radian calibration.
  *
  * @param comm Motor communication backend.
  * @param config Homing settings.
- * @param calibration Calibration object whose home counts are updated.
+ * @param calibration Calibration object whose home counts and spans are updated.
  * @param keep_running Signal-controlled run flag.
  * @return 0 on success or a negative errno-style value on failure.
  */

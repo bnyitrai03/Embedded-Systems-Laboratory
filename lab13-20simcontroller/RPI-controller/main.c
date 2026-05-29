@@ -45,10 +45,11 @@ static void print_usage(const char *program)
 {
     fprintf(stderr,
             "Usage: %s [spi_speed_hz] [home_pwm] [--hold] [--log csv_path]\n"
-            "Default: speed=%u Hz, home_pwm=1500 of %u\n"
+            "Default: speed=%u Hz, home_pwm=%u of %u\n"
             "When --hold is used without --log, CSV is written to pid_log.csv.\n",
             program,
             RPI_SPI_DEFAULT_SPEED_HZ,
+            MOTOR_PWM_MAX,
             MOTOR_PWM_MAX);
 }
 

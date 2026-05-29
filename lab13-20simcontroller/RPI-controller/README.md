@@ -6,12 +6,12 @@ See `ARCHITECTURE.md` for the control/data-flow explanation.
 - `control_protocol.*`: packs/unpacks the 32-bit motor/encoder frame.
 - `motor_comm.h`: communication interface used by the controller application.
 - `rpi_spi_master.*`: Raspberry Pi spidev implementation of that interface.
-- `jiwy_calibration.*`: converts encoder counts to radians and owns software home offsets, travel limits, and target clamps.
+- `jiwy_calibration.*`: converts encoder counts to radians and owns measured travel spans, software home offsets, travel limits, and target clamps.
 - `twentysim_controller.*`: initializes and steps the generated yaw/pitch 20-sim submodels and converts normalized controller output to PWM commands.
 - `control_loop.*`: time-driven position-control loop for one yaw/pitch target.
 - `homing.*`: sequential yaw/pitch software homing routine.
 - `main.c`: starts SPI, runs homing, initializes the controller after homing when `--hold` is requested, and prints the software home offsets.
-- `jiwy_config.h`: measured encoder travel calibration and initial software limits.
+- `jiwy_config.h`: physical travel angles, PWM limit, and initial software limits.
 - `controller/jiwy_20sim_tuning.h`: yaw/pitch PID tuning values used by the
   generated 20-sim model initializers.
 
@@ -24,8 +24,8 @@ RX byte 0..1: yaw encoder   signed int16
 RX byte 2..3: pitch encoder signed int16
 ```
 
-The PWM field has 14 protocol bits, but the current FPGA PWM period is 2500
-ticks at 50 MHz / 20 kHz. The C side clamps commands to `0..2500`.
+The PWM field has 14 protocol bits, and the FPGA PWM period is 2500 ticks at
+50 MHz / 20 kHz. The C side intentionally clamps commands to `0..250`.
 
 Direction convention in the C code is `0 = negative/decreasing encoder`,
 `1 = positive/increasing encoder`. If the FPGA uses the opposite polarity,
@@ -53,13 +53,13 @@ Run homing with defaults:
 Optional arguments are SPI speed and homing PWM:
 
 ```sh
-./jiwy_controller 100000 1500
+./jiwy_controller 100000 250
 ```
 
 Run homing and then hold the home position with the 20-sim controllers:
 
 ```sh
-./jiwy_controller 100000 1500 --hold
+./jiwy_controller 100000 250 --hold
 ```
 
 Build the standalone SPI smoke test:
@@ -75,26 +75,27 @@ Usage
 ```
 
 The homing routine has no limit-switch input. It moves one axis at a time with
-low PWM and treats a stable encoder count as the mechanical end stop. Keep the
-first test at low PWM and be ready to interrupt with Ctrl-C.
+low PWM, visits both mechanical stops, and treats a stable encoder count as each
+stop. The measured stop-to-stop encoder span is used for count-to-radian
+calibration. Keep the first test at low PWM and be ready to interrupt with
+Ctrl-C.
 
 Safety assumptions to verify on the real setup:
 
 - homing direction moves toward the intended mechanical end stop
 - positive controller output increases encoder counts
-- configured travel limits match the measured JIWY
+- configured travel angles and limits match the measured JIWY
 - homing PWM is low enough that pushing into the end stop is acceptable
 
-The default calibration uses the measured travel values:
+The default calibration uses the configured physical travel angles:
 
 ```text
-yaw:   2453 counts over 180 degrees
-pitch:  684 counts over 175 degrees
+yaw:   240 degrees
+pitch: 240 degrees
 ```
 
-Edit `jiwy_config.h` when you remeasure the setup or want to test different
-travel assumptions. These values affect count-to-radian conversion and the
-target clamps used by the calibration and 20-sim controller wrapper.
+Edit `jiwy_config.h` when you remeasure the angular travel or want to test
+different limit assumptions. Encoder travel counts are measured during homing.
 
 For controller tuning, edit the named PID constants in
 `controller/jiwy_20sim_tuning.h`, rebuild, and test again. The generated

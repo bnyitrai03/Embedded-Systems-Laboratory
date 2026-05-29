@@ -26,8 +26,9 @@ FPGA encoder counters
 ## Startup sequence
 
 1. `main.c` opens the selected `MotorComm` backend.
-2. `homing_run()` moves yaw and pitch one at a time to the configured mechanical
-   home direction and records the encoder counts as software zero.
+2. `homing_run()` moves yaw and pitch one at a time to both mechanical stops,
+   measures encoder travel, and records the configured home-side stop as
+   software zero.
 3. If `--hold` is supplied, `main.c` reads the current encoder sample,
    initializes `TwentySimController` with that feedback and the initial target,
    then starts `control_loop_run()` at 100 Hz using a fixed target of yaw
@@ -66,7 +67,7 @@ code convert that latest value into yaw/pitch target radians.
 
 `jiwy_config.h` contains the values that should change during lab testing:
 
-- encoder travel counts and travel degrees
+- physical travel degrees
 - software travel limits
 
 `controller/jiwy_20sim_tuning.h` contains yaw and pitch PID constants and
