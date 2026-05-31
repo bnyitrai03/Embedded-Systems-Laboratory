@@ -7,7 +7,7 @@
 #include "control_loop.h"
 #include "homing.h"
 #include "jiwy_calibration.h"
-#include "rpi_spi_master.h"
+#include "soc_system.h"
 #include "twentysim_controller.h"
 
 static volatile sig_atomic_t keep_running = 1;
@@ -41,24 +41,11 @@ static int is_option_arg(const char *text)
     return text != 0 && text[0] == '-' && text[1] == '-';
 }
 
-static void print_usage(const char *program)
-{
-    fprintf(stderr,
-            "Usage: %s [spi_speed_hz] [home_pwm] [--hold] [--log csv_path]\n"
-            "Default: speed=%u Hz, home_pwm=%u of %u\n"
-            "When --hold is used without --log, CSV is written to pid_log.csv.\n",
-            program,
-            RPI_SPI_DEFAULT_SPEED_HZ,
-            MOTOR_PWM_MAX,
-            MOTOR_PWM_MAX);
-}
-
 int main(int argc, char *argv[])
 {
-    unsigned speed_hz = RPI_SPI_DEFAULT_SPEED_HZ;
     HomingConfig homing_config = homing_default_config();
     JiwyCalibration calibration = jiwy_default_calibration();
-    RpiSpiComm spi = {.fd = -1, .speed_hz = 0, .channel = 0};
+    SocFpgaComm soc = {.mem_fd = -1, .regs = 0, .phys_base = 0, .map_span = 0};
     MotorComm comm;
     ControlLoopConfig control_config = control_loop_default_config();
     ControlTarget hold_target = {0.0, 0.0};
@@ -68,11 +55,6 @@ int main(int argc, char *argv[])
     int run_hold_loop = 0;
     int result;
     int arg_index = 1;
-
-    if (arg_index < argc && !is_option_arg(argv[arg_index])) {
-        speed_hz = parse_unsigned_arg(argv[arg_index], speed_hz);
-        ++arg_index;
-    }
 
     if (arg_index < argc && !is_option_arg(argv[arg_index])) {
         home_pwm = parse_unsigned_arg(argv[arg_index], homing_config.pwm);
@@ -87,7 +69,7 @@ int main(int argc, char *argv[])
         } else if (strcmp(argv[arg_index], "--log") == 0 && arg_index + 1 < argc) {
             csv_log_path = argv[++arg_index];
         } else {
-            print_usage(argv[0]);
+            fprintf(stderr, "Unknown option: %s\n", argv[arg_index]);
             return 2;
         }
     }
@@ -104,27 +86,16 @@ int main(int argc, char *argv[])
     signal(SIGINT, handle_signal);
     signal(SIGTERM, handle_signal);
 
-    /*
-     * All runtime behavior goes through MotorComm. Today that backend is
-     * Raspberry Pi spidev, but homing and control_loop do not depend on spidev
-     * details.
-     */
-    result = rpi_spi_comm_open(&spi,
-                               &comm,
-                               RPI_SPI_DEFAULT_CHANNEL,
-                               speed_hz,
-                               0);
+    result = soc_fpga_comm_open(&soc, &comm);
     if (result < 0) {
         fprintf(stderr,
-                "Failed to open /dev/spidev0.%u: %s\n",
-                RPI_SPI_DEFAULT_CHANNEL,
+                "Failed to open HPS-to-FPGA bridge at 0x%08X: %s\n",
+                SOC_FPGA_DEFAULT_BASE,
                 strerror(-result));
         return 1;
     }
-
-    printf("Starting homing over SPI channel %u at %u Hz\n",
-           RPI_SPI_DEFAULT_CHANNEL,
-           speed_hz);
+    printf("Starting homing over Avalon-MM at FPGA base 0x%08X\n", SOC_FPGA_DEFAULT_BASE);
+    
     printf("TX protocol: yaw[dir enable pwm14], then pitch[dir enable pwm14]\n");
     printf("RX protocol: signed int16 yaw encoder, then signed int16 pitch encoder\n");
 

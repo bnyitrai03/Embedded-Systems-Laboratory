@@ -529,3 +529,43 @@
 
 
 #endif /* _ALTERA_SOC_SYSTEM_H_ */
+
+#ifndef SOC_FPGA_BACKEND_H
+#define SOC_FPGA_BACKEND_H
+
+#include <stddef.h>
+#include <stdint.h>
+#include "motor_comm.h"
+
+/* Avalon-MM register map inside the FPGA middleware */
+#define MIDDLEWARE_REG_ENCODERS   0u
+#define MIDDLEWARE_REG_MOTORS     1u
+
+/* Packed 16-bit motor field */
+#define MOTOR_FIELD_PWM_MASK      0x3FFFu
+#define MOTOR_FIELD_ENABLE_BIT    14u
+#define MOTOR_FIELD_DIR_BIT       15u
+
+typedef struct {
+    int mem_fd;
+    volatile uint32_t *regs;
+    uintptr_t phys_base;
+    size_t map_span;
+} SocFpgaComm;
+
+#define SOC_FPGA_DEFAULT_BASE     PWM_WRAPPER_0_BASE
+#define SOC_FPGA_DEFAULT_SPAN     PWM_WRAPPER_0_SPAN
+
+#define PACK_MOTOR16(dir, en, pwm) \
+    (uint16_t)((((uint16_t)(dir) & 0x1u) << MOTOR_FIELD_DIR_BIT) | \
+               (((uint16_t)(en)  & 0x1u) << MOTOR_FIELD_ENABLE_BIT) | \
+               ((uint16_t)(pwm) & MOTOR_FIELD_PWM_MASK))
+
+#define PACK_MOTOR32(yaw_dir, yaw_en, yaw_pwm, pitch_dir, pitch_en, pitch_pwm) \
+    (uint32_t)((((uint32_t)PACK_MOTOR16((pitch_dir), (pitch_en), (pitch_pwm))) << 16) | \
+               ((uint32_t)PACK_MOTOR16((yaw_dir),   (yaw_en),   (yaw_pwm))))
+
+int soc_fpga_comm_open(SocFpgaComm *soc, MotorComm *comm);
+void soc_fpga_comm_close(SocFpgaComm *soc);
+
+#endif
