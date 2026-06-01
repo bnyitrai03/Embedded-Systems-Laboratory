@@ -35,6 +35,7 @@ swap the direction handling in `control_protocol.c` or in the FPGA.
 Build on the Raspberry Pi with Make:
 
 ```sh
+sudo apt install pkg-config libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 make
 ```
 

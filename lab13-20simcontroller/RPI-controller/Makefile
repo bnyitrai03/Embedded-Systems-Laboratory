@@ -4,6 +4,10 @@ CPPFLAGS ?= -I. -Icontroller/yaw_controller -Icontroller/pitch_controller -D_GNU
 DEPFLAGS ?= -MMD -MP
 LDLIBS ?= -lm
 GST_PACKAGES = gstreamer-1.0 gstreamer-app-1.0 gstreamer-video-1.0 glib-2.0
+GST_MISSING := $(shell pkg-config --exists $(GST_PACKAGES) || echo yes)
+ifeq ($(GST_MISSING),yes)
+$(error Missing GStreamer development packages. On Raspberry Pi OS install: sudo apt install pkg-config libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev)
+endif
 GST_CFLAGS := $(shell pkg-config --cflags $(GST_PACKAGES))
 GST_LDLIBS := $(shell pkg-config --libs $(GST_PACKAGES))
 THREAD_FLAGS ?= -pthread
