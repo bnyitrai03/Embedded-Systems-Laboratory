@@ -16,6 +16,10 @@ control target
     -> MotorComm backend
     -> FPGA motor driver
 
+optional camera tracker
+    -> VisionTargetSnapshot yaw/pitch error in radians
+    -> latest target selection in control_loop_run()
+
 FPGA encoder counters
     -> MotorComm backend
     -> EncoderSample
@@ -29,10 +33,12 @@ FPGA encoder counters
 2. `homing_run()` moves yaw and pitch one at a time to both mechanical stops,
    measures encoder travel, and records the configured home-side stop as
    software zero.
-3. If `--hold` is supplied, `main.c` reads the current encoder sample,
+3. If `--hold` or `--track` is supplied, `main.c` reads the current encoder sample,
    initializes `TwentySimController` with that feedback and the initial target,
-   then starts `control_loop_run()` at 100 Hz using a fixed target of yaw
-   `0 rad`, pitch `0 rad`.
+   then starts `control_loop_run()` at 100 Hz.
+4. `--hold` uses a fixed target of yaw `0 rad`, pitch `0 rad`. `--track`
+   starts `vision_tracker` first and lets the control loop derive targets from
+   the latest camera error.
 
 ## Extension points
 
@@ -50,18 +56,21 @@ code do not need to change.
 
 ### Control target
 
-`control_loop_run()` currently accepts one fixed `ControlTarget`. This keeps the
-hold loop simple during motor bring-up. Future behavior can replace that fixed
-target with values from:
+`control_loop_run()` accepts a fixed `ControlTarget` and an optional
+`VisionTracker`. A null tracker keeps the hold loop simple during motor
+bring-up. A non-null tracker updates the target from the latest camera result.
+Other target sources can follow the same pattern:
 
 - fixed-position hold
 - manual joystick input
 - scripted setpoints
-- vision target tracking
+- vision target tracking with `--track`
 
-Vision should avoid blocking the motor loop. The expected pattern is to process
-camera frames elsewhere, store the latest valid image error, and let the control
-code convert that latest value into yaw/pitch target radians.
+Vision avoids blocking the motor loop by processing camera frames on its own
+thread. The control loop only copies a small mutex-protected snapshot. When the
+green object is detected, target radians are computed as current encoder angle
+plus camera error. When it is not detected, the target is the current encoder
+angle.
 
 ## Calibration and tuning
 

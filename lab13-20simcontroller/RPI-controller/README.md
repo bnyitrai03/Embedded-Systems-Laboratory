@@ -9,8 +9,9 @@ See `ARCHITECTURE.md` for the control/data-flow explanation.
 - `jiwy_calibration.*`: converts encoder counts to radians and owns measured travel spans, software home offsets, travel limits, and target clamps.
 - `twentysim_controller.*`: initializes and steps the generated yaw/pitch 20-sim submodels and converts normalized controller output to PWM commands.
 - `control_loop.*`: time-driven position-control loop for one yaw/pitch target.
+- `vision_tracker.*`: optional GStreamer green-object tracker that publishes yaw/pitch camera error in radians.
 - `homing.*`: sequential yaw/pitch software homing routine.
-- `main.c`: starts SPI, runs homing, initializes the controller after homing when `--hold` is requested, and prints the software home offsets.
+- `main.c`: starts SPI, runs homing, then optionally runs fixed hold with `--hold` or vision tracking with `--track`.
 - `jiwy_config.h`: physical travel angles, PWM limit, and initial software limits.
 - `controller/jiwy_20sim_tuning.h`: yaw/pitch PID tuning values used by the
   generated 20-sim model initializers.
@@ -62,6 +63,18 @@ Run homing and then hold the home position with the 20-sim controllers:
 ./jiwy_controller 100000 250 --hold
 ```
 
+Run homing and then track a green object with the camera:
+
+```sh
+./jiwy_controller 100000 250 --track
+```
+
+The default camera is `/dev/video0`. Choose another V4L2 camera with:
+
+```sh
+./jiwy_controller 100000 250 --track --camera /dev/video1
+```
+
 Build the standalone SPI smoke test:
 
 ```sh
@@ -111,28 +124,59 @@ tauI    integral time; larger means weaker/slower integral action
 min/max normalized controller output clamp, later mapped to PWM
 ```
 
-To add vision later, replace the fixed `ControlTarget` passed to
-`control_loop_run` with target values derived from the latest camera result.
-The motor loop can stay at 100 Hz while the vision code reuses the latest
-detected target between camera frames.
-# PID CSV logging
-
-When running the hold loop, the controller writes a CSV log by default:
-
-```bash
-./jiwy_controller 100000 500 --hold
-```
-
-This creates:
+Vision tracking is opt-in with `--track`. The camera thread expects an MJPEG
+V4L2 camera at `640x480` and decodes frames through GStreamer:
 
 ```text
-pid_log.csv
+v4l2src -> image/jpeg caps -> jpegdec -> videoconvert -> videoscale -> RGB -> appsink
 ```
 
-To choose another path:
+The tracker scans RGB pixels for green, averages the green pixel coordinates,
+and converts the centroid to camera error using a fixed 60 degree field of
+view. The units are pixels until the final multiply by radians:
+
+```c
+yaw_error_rad =
+    ((object_x - center_x) / center_x) * (camera_fov_rad / 2.0);
+
+pitch_error_rad =
+    ((center_y - object_y) / center_y) * (camera_fov_rad / 2.0);
+```
+
+`camera_fov_rad / 2.0` is used because 60 degrees is the full image width or
+height: the image center is 0 degrees, and each edge is 30 degrees from the
+centerline. Positive yaw means the object is right of center. Positive pitch
+means the object is above center.
+
+The 100 Hz motor loop reads the latest camera result each sample. If the ball is
+detected, the setpoint is:
+
+```text
+target = current encoder angle + camera error
+```
+
+If no ball is detected, the setpoint is the current encoder angle, so the robot
+stops chasing stale camera data.
+
+# PID CSV logging
+
+The controller is quiet by default. It does not write CSV logs or camera debug
+logs unless requested.
 
 ```bash
-./jiwy_controller 100000 500 --hold --log yaw_pitch_test.csv
+./jiwy_controller 100000 500 --hold --log pid_log.csv
+```
+
+The same CSV logging is available while tracking:
+
+```bash
+./jiwy_controller 100000 500 --track --log yaw_pitch_test.csv
+```
+
+Enable low-rate camera diagnostics with:
+
+```bash
+./jiwy_controller 100000 500 --track --vision-debug
 ```
 
 Plot after the run:

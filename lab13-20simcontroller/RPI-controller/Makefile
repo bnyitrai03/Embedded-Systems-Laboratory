@@ -3,12 +3,17 @@ CFLAGS ?= -O2 -Wall -Wextra -std=c11
 CPPFLAGS ?= -I. -Icontroller/yaw_controller -Icontroller/pitch_controller -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L
 DEPFLAGS ?= -MMD -MP
 LDLIBS ?= -lm
+GST_PACKAGES = gstreamer-1.0 gstreamer-app-1.0 gstreamer-video-1.0 glib-2.0
+GST_CFLAGS := $(shell pkg-config --cflags $(GST_PACKAGES))
+GST_LDLIBS := $(shell pkg-config --libs $(GST_PACKAGES))
+THREAD_FLAGS ?= -pthread
 
 TARGET = jiwy_controller
 
 SRCS = \
 	main.c \
 	control_loop.c \
+	vision_tracker.c \
 	control_protocol.c \
 	jiwy_calibration.c \
 	twentysim_controller.c \
@@ -31,10 +36,10 @@ DEPS = $(OBJS:.o=.d)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ $(OBJS) $(LDLIBS)
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(THREAD_FLAGS) -o $@ $(OBJS) $(LDLIBS) $(GST_LDLIBS) $(THREAD_FLAGS)
 
 %.o: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEPFLAGS) -c -o $@ $<
+	$(CC) $(CPPFLAGS) $(GST_CFLAGS) $(CFLAGS) $(THREAD_FLAGS) $(DEPFLAGS) -c -o $@ $<
 
 smoke-test:
 	$(CC) $(CFLAGS) -o test/spi_motor_smoke_test test/spi_motor_smoke_test.c

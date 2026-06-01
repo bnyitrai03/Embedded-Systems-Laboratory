@@ -9,7 +9,7 @@ ControlLoopConfig control_loop_default_config(void)
     ControlLoopConfig config;
 
     config.sample_period_us = 10000;
-    config.log_period_samples = 100;
+    config.log_period_samples = 0;
     config.csv_log_path = 0;
     return config;
 }
@@ -59,6 +59,7 @@ int control_loop_run(MotorComm *comm,
                      const JiwyCalibration *calibration,
                      const ControlLoopConfig *config,
                      ControlTarget target,
+                     VisionTracker *vision_tracker,
                      volatile sig_atomic_t *keep_running)
 {
     EncoderSample encoders;
@@ -104,6 +105,7 @@ int control_loop_run(MotorComm *comm,
         struct timespec work_end;
         double yaw_actual_rad;
         double pitch_actual_rad;
+        VisionTargetSnapshot vision_snapshot;
         long work_us;
         long lateness_us;
 
@@ -132,14 +134,28 @@ int control_loop_run(MotorComm *comm,
             return result;
         }
 
+        yaw_actual_rad = jiwy_yaw_rad(calibration, encoders.yaw);
+        pitch_actual_rad = jiwy_pitch_rad(calibration, encoders.pitch);
+
+        if (vision_tracker != 0 &&
+            vision_tracker_read_latest(vision_tracker, &vision_snapshot) == 0) {
+            if (vision_snapshot.valid) {
+                target.yaw_target_rad =
+                    yaw_actual_rad + vision_snapshot.yaw_error_rad;
+                target.pitch_target_rad =
+                    pitch_actual_rad + vision_snapshot.pitch_error_rad;
+            } else {
+                target.yaw_target_rad = yaw_actual_rad;
+                target.pitch_target_rad = pitch_actual_rad;
+            }
+        }
+
         output = twentysim_controller_step(controller,
                                            calibration,
                                            encoders,
                                            target.yaw_target_rad,
                                            target.pitch_target_rad);
         command = controller_output_to_command(output);
-        yaw_actual_rad = jiwy_yaw_rad(calibration, encoders.yaw);
-        pitch_actual_rad = jiwy_pitch_rad(calibration, encoders.pitch);
 
         result = clock_gettime(CLOCK_MONOTONIC, &work_end);
         if (result < 0) {

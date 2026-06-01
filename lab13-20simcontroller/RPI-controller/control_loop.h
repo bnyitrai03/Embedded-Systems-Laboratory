@@ -6,6 +6,7 @@
 #include "jiwy_calibration.h"
 #include "motor_comm.h"
 #include "twentysim_controller.h"
+#include "vision_tracker.h"
 
 /**
  * @file control_loop.h
@@ -49,6 +50,7 @@ int control_loop_run(MotorComm *comm,
                      const JiwyCalibration *calibration,
                      const ControlLoopConfig *config,
                      ControlTarget target,
+                     VisionTracker *vision_tracker,
                      volatile sig_atomic_t *keep_running);
 
 #endif
