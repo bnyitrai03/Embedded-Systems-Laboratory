@@ -144,9 +144,6 @@ int control_loop_run(MotorComm *comm,
                     yaw_actual_rad + vision_snapshot.yaw_error_rad;
                 target.pitch_target_rad =
                     pitch_actual_rad + vision_snapshot.pitch_error_rad;
-            } else {
-                target.yaw_target_rad = yaw_actual_rad;
-                target.pitch_target_rad = pitch_actual_rad;
             }
         }
 

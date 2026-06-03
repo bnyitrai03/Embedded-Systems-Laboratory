@@ -46,7 +46,8 @@ static void print_usage(const char *program)
 {
     fprintf(stderr,
             "Usage: %s [spi_speed_hz] [home_pwm] [--hold|--track] "
-            "[--camera /dev/videoX] [--vision-debug] [--log csv_path]\n"
+            "[--camera /dev/videoX] [--vision-debug] "
+            "[--status-every samples] [--log csv_path]\n"
             "Default: speed=%u Hz, home_pwm=%u of %u\n"
             "--hold keeps yaw=0 rad and pitch=0 rad after homing.\n"
             "--track follows a green object with the camera; logging is off "
@@ -99,6 +100,11 @@ int main(int argc, char *argv[])
             camera_device = argv[++arg_index];
         } else if (strcmp(argv[arg_index], "--vision-debug") == 0) {
             vision_debug_enabled = 1;
+        } else if (strcmp(argv[arg_index], "--status-every") == 0 &&
+                   arg_index + 1 < argc) {
+            control_config.log_period_samples =
+                parse_unsigned_arg(argv[++arg_index],
+                                   control_config.log_period_samples);
         } else if (strcmp(argv[arg_index], "--log") == 0 && arg_index + 1 < argc) {
             csv_log_path = argv[++arg_index];
         } else if (strcmp(argv[arg_index], "--help") == 0) {
@@ -233,7 +239,7 @@ int main(int argc, char *argv[])
                                   &controller,
                                   &calibration,
                                   &control_config,
-                                  hold_target,
+                                  initial_target,
                                   active_vision_tracker,
                                   &keep_running);
         motor_comm_exchange(&comm, protocol_stop_command(), 0);

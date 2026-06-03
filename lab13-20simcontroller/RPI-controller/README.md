@@ -174,6 +174,14 @@ The same CSV logging is available while tracking:
 ./jiwy_controller 100000 500 --track --log yaw_pitch_test.csv
 ```
 
+To check control-loop timing without full CSV logging, print one status line
+every N samples. At the default 100 Hz control rate, `100` means once per
+second:
+
+```bash
+./jiwy_controller 100000 500 --track --status-every 100
+```
+
 Enable low-rate camera diagnostics with:
 
 ```bash
