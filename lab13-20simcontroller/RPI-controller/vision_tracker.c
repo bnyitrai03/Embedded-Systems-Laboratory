@@ -8,9 +8,9 @@
 #include <gst/app/gstappsink.h>
 #include <gst/video/video.h>
 
-#define VISION_FRAME_WIDTH 640
-#define VISION_FRAME_HEIGHT 480
-#define VISION_FRAME_RATE 30
+#define VISION_FRAME_WIDTH 320
+#define VISION_FRAME_HEIGHT 240
+#define VISION_FRAME_RATE 15
 #define VISION_MIN_GREEN_PIXELS 80
 #define VISION_FOV_RAD (60.0 * M_PI / 180.0)
 #define VISION_DEFAULT_CAMERA "/dev/video0"

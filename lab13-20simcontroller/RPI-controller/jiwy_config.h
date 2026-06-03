@@ -13,7 +13,7 @@
  * The FPGA PWM period is 2500 ticks at 50 MHz / 20 kHz, but the controller
  * intentionally limits commands to 250 ticks for safer lab bring-up.
  */
-#define MOTOR_PWM_MAX 250u
+#define MOTOR_PWM_MAX 512u
 
 
 /*
