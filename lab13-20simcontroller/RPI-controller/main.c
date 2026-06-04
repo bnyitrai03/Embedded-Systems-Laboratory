@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     RpiSpiComm spi = {.fd = -1, .speed_hz = 0, .channel = 0};
     MotorComm comm;
     ControlLoopConfig control_config = control_loop_default_config();
-    ControlTarget hold_target = {0.0, 0.0};
+    ControlTarget hold_target = {JIWY_PITCH_MAX_RAD/2, JIWY_YAW_MAX_RAD/2};
     VisionTracker vision_tracker;
     VisionTracker *active_vision_tracker = 0;
     const char *csv_log_path = 0;
