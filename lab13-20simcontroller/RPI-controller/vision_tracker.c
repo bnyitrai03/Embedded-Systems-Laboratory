@@ -10,7 +10,7 @@
 
 #define VISION_FRAME_WIDTH 320
 #define VISION_FRAME_HEIGHT 240
-#define VISION_FRAME_RATE 15
+#define VISION_FRAME_RATE 30
 #define VISION_MIN_GREEN_PIXELS 80
 #define VISION_FOV_RAD (60.0 * M_PI / 180.0)
 #define VISION_DEFAULT_CAMERA "/dev/video0"
@@ -49,9 +49,9 @@ static void pixel_to_camera_error(double object_x,
     double center_y = (double)height / 2.0;
 
     *yaw_error_rad =
-        ((object_x - center_x) / center_x) * (VISION_FOV_RAD / 2.0);
+        -((object_x - center_x) / center_x) * (VISION_FOV_RAD / 2.0);
     *pitch_error_rad =
-        ((center_y - object_y) / center_y) * (VISION_FOV_RAD / 2.0);
+        -((center_y - object_y) / center_y) * (VISION_FOV_RAD / 2.0);
 }
 
 static void update_snapshot(VisionTracker *tracker,
