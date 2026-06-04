@@ -2,8 +2,12 @@
 
 #include <errno.h>
 #include <math.h>
+#include <netinet/in.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 #include <gst/app/gstappsink.h>
 #include <gst/video/video.h>
@@ -14,6 +18,10 @@
 #define VISION_MIN_GREEN_PIXELS 80
 #define VISION_FOV_RAD (60.0 * M_PI / 180.0)
 #define VISION_DEFAULT_CAMERA "/dev/video0"
+#define VISION_STREAM_DEFAULT_PORT 8080
+#define VISION_STREAM_FPS_DIVISOR 3
+#define VISION_BMP_HEADER_SIZE 54
+#define VISION_STREAM_BOUNDARY "jiwyframe"
 
 typedef struct {
     VisionTracker *tracker;
@@ -36,6 +44,332 @@ static gboolean is_green_pixel(guint8 r, guint8 g, guint8 b)
     saturation_percent = (delta * 100) / max_value;
 
     return hue >= 60 && hue <= 170 && saturation_percent >= 35;
+}
+
+static void write_le16(guint8 *out, uint16_t value)
+{
+    out[0] = (guint8)(value & 0xFFu);
+    out[1] = (guint8)((value >> 8) & 0xFFu);
+}
+
+static void write_le32(guint8 *out, uint32_t value)
+{
+    out[0] = (guint8)(value & 0xFFu);
+    out[1] = (guint8)((value >> 8) & 0xFFu);
+    out[2] = (guint8)((value >> 16) & 0xFFu);
+    out[3] = (guint8)((value >> 24) & 0xFFu);
+}
+
+static int send_all(int fd, const void *buffer, size_t size)
+{
+    const guint8 *bytes = (const guint8 *)buffer;
+#ifdef MSG_NOSIGNAL
+    const int send_flags = MSG_NOSIGNAL;
+#else
+    const int send_flags = 0;
+#endif
+
+    while (size > 0) {
+        ssize_t sent = send(fd, bytes, size, send_flags);
+
+        if (sent < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            return -errno;
+        }
+        if (sent == 0) {
+            return -EPIPE;
+        }
+
+        bytes += sent;
+        size -= (size_t)sent;
+    }
+
+    return 0;
+}
+
+static void close_stream_fd(int *fd)
+{
+    if (*fd >= 0) {
+        shutdown(*fd, SHUT_RDWR);
+        close(*fd);
+        *fd = -1;
+    }
+}
+
+static void draw_red_marker(guint8 *rgb,
+                            int width,
+                            int height,
+                            int stride,
+                            int center_x,
+                            int center_y)
+{
+    const int radius = 5;
+
+    for (int y = center_y - radius; y <= center_y + radius; ++y) {
+        for (int x = center_x - radius; x <= center_x + radius; ++x) {
+            int dx = x - center_x;
+            int dy = y - center_y;
+            guint8 *pixel;
+
+            if (x < 0 || x >= width || y < 0 || y >= height) {
+                continue;
+            }
+            if (dx * dx + dy * dy > radius * radius &&
+                dx != 0 && dy != 0) {
+                continue;
+            }
+
+            pixel = rgb + y * stride + x * 3;
+            pixel[0] = 255;
+            pixel[1] = 0;
+            pixel[2] = 0;
+        }
+    }
+}
+
+static void publish_stream_frame(VisionTracker *tracker,
+                                 const guint8 *rgb,
+                                 int width,
+                                 int height,
+                                 int stride,
+                                 int marker_valid,
+                                 int marker_x,
+                                 int marker_y)
+{
+    guint row_size = (guint)(((width * 3) + 3) & ~3);
+    gsize pixel_data_size = (gsize)row_size * (gsize)height;
+    gsize frame_size = VISION_BMP_HEADER_SIZE + pixel_data_size;
+    guint8 *frame;
+
+    if (!tracker->stream_enabled || !tracker->stream_running) {
+        return;
+    }
+
+    frame = (guint8 *)malloc(frame_size);
+    if (frame == NULL) {
+        return;
+    }
+
+    memset(frame, 0, frame_size);
+    frame[0] = 'B';
+    frame[1] = 'M';
+    write_le32(frame + 2, (uint32_t)frame_size);
+    write_le32(frame + 10, VISION_BMP_HEADER_SIZE);
+    write_le32(frame + 14, 40);
+    write_le32(frame + 18, (uint32_t)width);
+    write_le32(frame + 22, (uint32_t)height);
+    write_le16(frame + 26, 1);
+    write_le16(frame + 28, 24);
+    write_le32(frame + 34, (uint32_t)pixel_data_size);
+
+    for (int y = 0; y < height; ++y) {
+        const guint8 *src = rgb + y * stride;
+        guint8 *dst = frame + VISION_BMP_HEADER_SIZE +
+            (gsize)(height - 1 - y) * row_size;
+
+        for (int x = 0; x < width; ++x) {
+            dst[x * 3 + 0] = src[x * 3 + 2];
+            dst[x * 3 + 1] = src[x * 3 + 1];
+            dst[x * 3 + 2] = src[x * 3 + 0];
+        }
+    }
+
+    if (marker_valid) {
+        int bmp_stride = (int)row_size;
+        int bmp_y = height - 1 - marker_y;
+        guint8 *bmp_rgb = (guint8 *)malloc((gsize)height * (gsize)bmp_stride);
+
+        /*
+         * Reuse the RGB marker routine on a temporary top-down view, then copy
+         * it back to BMP BGR. This keeps the marker clipping logic single-use.
+         */
+        if (bmp_rgb != NULL) {
+            memset(bmp_rgb, 0, (gsize)height * (gsize)bmp_stride);
+            for (int y = 0; y < height; ++y) {
+                guint8 *dst = bmp_rgb + y * bmp_stride;
+                guint8 *src = frame + VISION_BMP_HEADER_SIZE +
+                    (gsize)(height - 1 - y) * row_size;
+                for (int x = 0; x < width; ++x) {
+                    dst[x * 3 + 0] = src[x * 3 + 2];
+                    dst[x * 3 + 1] = src[x * 3 + 1];
+                    dst[x * 3 + 2] = src[x * 3 + 0];
+                }
+            }
+            (void)bmp_y;
+            draw_red_marker(bmp_rgb,
+                            width,
+                            height,
+                            bmp_stride,
+                            marker_x,
+                            marker_y);
+            for (int y = 0; y < height; ++y) {
+                guint8 *src = bmp_rgb + y * bmp_stride;
+                guint8 *dst = frame + VISION_BMP_HEADER_SIZE +
+                    (gsize)(height - 1 - y) * row_size;
+                for (int x = 0; x < width; ++x) {
+                    dst[x * 3 + 0] = src[x * 3 + 2];
+                    dst[x * 3 + 1] = src[x * 3 + 1];
+                    dst[x * 3 + 2] = src[x * 3 + 0];
+                }
+            }
+            free(bmp_rgb);
+        }
+    }
+
+    pthread_mutex_lock(&tracker->stream_lock);
+    free(tracker->stream_frame);
+    tracker->stream_frame = frame;
+    tracker->stream_frame_size = frame_size;
+    tracker->stream_frame_width = width;
+    tracker->stream_frame_height = height;
+    ++tracker->stream_frame_sequence;
+    pthread_cond_broadcast(&tracker->stream_cond);
+    pthread_mutex_unlock(&tracker->stream_lock);
+}
+
+static int send_stream_http_header(int client_fd)
+{
+    const char *header =
+        "HTTP/1.0 200 OK\r\n"
+        "Server: jiwy-vision-stream\r\n"
+        "Cache-Control: no-cache\r\n"
+        "Pragma: no-cache\r\n"
+        "Connection: close\r\n"
+        "Content-Type: multipart/x-mixed-replace; boundary="
+        VISION_STREAM_BOUNDARY "\r\n"
+        "\r\n";
+
+    return send_all(client_fd, header, strlen(header));
+}
+
+static int stream_client_loop(VisionTracker *tracker, int client_fd)
+{
+    uint64_t last_sequence = 0;
+    int result = send_stream_http_header(client_fd);
+
+    if (result < 0) {
+        return result;
+    }
+
+    while (tracker->stream_running) {
+        guint8 *frame = NULL;
+        size_t frame_size = 0;
+        char part_header[160];
+        int header_size;
+
+        pthread_mutex_lock(&tracker->stream_lock);
+        while (tracker->stream_running &&
+               tracker->stream_frame_sequence == last_sequence) {
+            pthread_cond_wait(&tracker->stream_cond, &tracker->stream_lock);
+        }
+        if (!tracker->stream_running) {
+            pthread_mutex_unlock(&tracker->stream_lock);
+            break;
+        }
+
+        frame_size = tracker->stream_frame_size;
+        frame = (guint8 *)malloc(frame_size);
+        if (frame != NULL) {
+            memcpy(frame, tracker->stream_frame, frame_size);
+            last_sequence = tracker->stream_frame_sequence;
+        }
+        pthread_mutex_unlock(&tracker->stream_lock);
+
+        if (frame == NULL) {
+            return -ENOMEM;
+        }
+
+        header_size = snprintf(part_header,
+                               sizeof(part_header),
+                               "--" VISION_STREAM_BOUNDARY "\r\n"
+                               "Content-Type: image/bmp\r\n"
+                               "Content-Length: %zu\r\n\r\n",
+                               frame_size);
+        if (header_size < 0 || header_size >= (int)sizeof(part_header)) {
+            free(frame);
+            return -EINVAL;
+        }
+
+        result = send_all(client_fd, part_header, (size_t)header_size);
+        if (result == 0) {
+            result = send_all(client_fd, frame, frame_size);
+        }
+        if (result == 0) {
+            result = send_all(client_fd, "\r\n", 2);
+        }
+        free(frame);
+
+        if (result < 0) {
+            return result;
+        }
+    }
+
+    return 0;
+}
+
+static void *vision_stream_thread_main(void *arg)
+{
+    VisionTracker *tracker = (VisionTracker *)arg;
+    int listen_fd;
+    int yes = 1;
+    struct sockaddr_in address;
+
+    listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (listen_fd < 0) {
+        fprintf(stderr, "Vision stream socket failed: %s\n", strerror(errno));
+        return NULL;
+    }
+
+    tracker->stream_listen_fd = listen_fd;
+    setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+
+    memset(&address, 0, sizeof(address));
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = htonl(0x7F000001u);
+    address.sin_port = htons((uint16_t)tracker->stream_port);
+
+    if (bind(listen_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        fprintf(stderr,
+                "Vision stream bind failed on 127.0.0.1:%d: %s\n",
+                tracker->stream_port,
+                strerror(errno));
+        close_stream_fd(&tracker->stream_listen_fd);
+        return NULL;
+    }
+
+    if (listen(listen_fd, 1) < 0) {
+        fprintf(stderr, "Vision stream listen failed: %s\n", strerror(errno));
+        close_stream_fd(&tracker->stream_listen_fd);
+        return NULL;
+    }
+
+    printf("Vision stream listening on http://127.0.0.1:%d/\n",
+           tracker->stream_port);
+
+    while (tracker->stream_running) {
+        int client_fd = accept(listen_fd, NULL, NULL);
+
+        if (client_fd < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            if (tracker->stream_running) {
+                fprintf(stderr,
+                        "Vision stream accept failed: %s\n",
+                        strerror(errno));
+            }
+            break;
+        }
+
+        tracker->stream_client_fd = client_fd;
+        (void)stream_client_loop(tracker, client_fd);
+        close_stream_fd(&tracker->stream_client_fd);
+    }
+
+    close_stream_fd(&tracker->stream_listen_fd);
+    return NULL;
 }
 
 static void pixel_to_camera_error(double object_x,
@@ -78,6 +412,9 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
     uint64_t green_pixels = 0;
     uint64_t sum_x = 0;
     uint64_t sum_y = 0;
+    int marker_valid = 0;
+    int marker_x = 0;
+    int marker_y = 0;
 
     if (sample == NULL) {
         return GST_FLOW_ERROR;
@@ -139,6 +476,9 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
         double object_y = (double)sum_y / (double)green_pixels;
 
         snapshot.valid = 1;
+        marker_valid = 1;
+        marker_x = (int)(object_x + 0.5);
+        marker_y = (int)(object_y + 0.5);
         pixel_to_camera_error(object_x,
                               object_y,
                               width,
@@ -148,6 +488,18 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
     }
 
     update_snapshot(tracker, &snapshot);
+
+    if (tracker->stream_enabled &&
+        data->frame_count % VISION_STREAM_FPS_DIVISOR == 0) {
+        publish_stream_frame(tracker,
+                             map.data,
+                             width,
+                             height,
+                             stride,
+                             marker_valid,
+                             marker_x,
+                             marker_y);
+    }
 
     if (tracker->debug_enabled && data->frame_count % 30 == 0) {
         if (snapshot.valid) {
@@ -367,12 +719,18 @@ void vision_tracker_init(VisionTracker *tracker)
     memset(tracker, 0, sizeof(*tracker));
     pthread_mutex_init(&tracker->lock, NULL);
     pthread_mutex_init(&tracker->state_lock, NULL);
+    pthread_mutex_init(&tracker->stream_lock, NULL);
     pthread_cond_init(&tracker->state_cond, NULL);
+    pthread_cond_init(&tracker->stream_cond, NULL);
+    tracker->stream_listen_fd = -1;
+    tracker->stream_client_fd = -1;
 }
 
 int vision_tracker_start(VisionTracker *tracker,
                          const char *camera_device,
-                         int debug_enabled)
+                         int debug_enabled,
+                         int stream_enabled,
+                         int stream_port)
 {
     int result;
 
@@ -383,14 +741,38 @@ int vision_tracker_start(VisionTracker *tracker,
     tracker->camera_device =
         camera_device != NULL ? camera_device : VISION_DEFAULT_CAMERA;
     tracker->debug_enabled = debug_enabled;
+    tracker->stream_enabled = stream_enabled;
+    tracker->stream_port =
+        stream_port > 0 ? stream_port : VISION_STREAM_DEFAULT_PORT;
     tracker->start_done = 0;
     tracker->start_result = 0;
+    tracker->stream_running = stream_enabled;
+    tracker->stream_thread_started = 0;
+
+    if (tracker->stream_enabled) {
+        result = pthread_create(&tracker->stream_thread,
+                                NULL,
+                                vision_stream_thread_main,
+                                tracker);
+        if (result != 0) {
+            tracker->stream_running = 0;
+            return -result;
+        }
+        tracker->stream_thread_started = 1;
+    }
 
     result = pthread_create(&tracker->thread,
                             NULL,
                             vision_thread_main,
                             tracker);
     if (result != 0) {
+        tracker->stream_running = 0;
+        pthread_cond_broadcast(&tracker->stream_cond);
+        close_stream_fd(&tracker->stream_listen_fd);
+        if (tracker->stream_thread_started) {
+            pthread_join(tracker->stream_thread, NULL);
+            tracker->stream_thread_started = 0;
+        }
         return -result;
     }
     tracker->thread_started = 1;
@@ -405,6 +787,14 @@ int vision_tracker_start(VisionTracker *tracker,
     if (result < 0) {
         pthread_join(tracker->thread, NULL);
         tracker->thread_started = 0;
+        tracker->stream_running = 0;
+        pthread_cond_broadcast(&tracker->stream_cond);
+        close_stream_fd(&tracker->stream_listen_fd);
+        close_stream_fd(&tracker->stream_client_fd);
+        if (tracker->stream_thread_started) {
+            pthread_join(tracker->stream_thread, NULL);
+            tracker->stream_thread_started = 0;
+        }
     } else {
         tracker->running = 1;
     }
@@ -425,6 +815,21 @@ void vision_tracker_stop(VisionTracker *tracker)
     pthread_join(tracker->thread, NULL);
     tracker->thread_started = 0;
     tracker->running = 0;
+
+    tracker->stream_running = 0;
+    pthread_cond_broadcast(&tracker->stream_cond);
+    close_stream_fd(&tracker->stream_listen_fd);
+    close_stream_fd(&tracker->stream_client_fd);
+    if (tracker->stream_thread_started) {
+        pthread_join(tracker->stream_thread, NULL);
+        tracker->stream_thread_started = 0;
+    }
+
+    pthread_mutex_lock(&tracker->stream_lock);
+    free(tracker->stream_frame);
+    tracker->stream_frame = NULL;
+    tracker->stream_frame_size = 0;
+    pthread_mutex_unlock(&tracker->stream_lock);
 }
 
 int vision_tracker_read_latest(VisionTracker *tracker,

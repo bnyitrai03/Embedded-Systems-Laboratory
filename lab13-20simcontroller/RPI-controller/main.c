@@ -46,7 +46,8 @@ static void print_usage(const char *program)
 {
     fprintf(stderr,
             "Usage: %s [spi_speed_hz] [home_pwm] [--hold|--track] "
-            "[--camera /dev/videoX] [--vision-debug] "
+            "[--camera /dev/videoX] [--vision-debug] [--vision-stream] "
+            "[--vision-stream-port port] "
             "[--status-every samples] [--log csv_path]\n"
             "Default: speed=%u Hz, home_pwm=%u of %u\n"
             "--hold keeps yaw=0 rad and pitch=0 rad after homing.\n"
@@ -75,6 +76,8 @@ int main(int argc, char *argv[])
     int run_hold_loop = 0;
     int run_track_loop = 0;
     int vision_debug_enabled = 0;
+    int vision_stream_enabled = 0;
+    int vision_stream_port = 8080;
     int result;
     int arg_index = 1;
 
@@ -100,6 +103,13 @@ int main(int argc, char *argv[])
             camera_device = argv[++arg_index];
         } else if (strcmp(argv[arg_index], "--vision-debug") == 0) {
             vision_debug_enabled = 1;
+        } else if (strcmp(argv[arg_index], "--vision-stream") == 0) {
+            vision_stream_enabled = 1;
+        } else if (strcmp(argv[arg_index], "--vision-stream-port") == 0 &&
+                   arg_index + 1 < argc) {
+            vision_stream_port =
+                (int)parse_unsigned_arg(argv[++arg_index],
+                                        (unsigned)vision_stream_port);
         } else if (strcmp(argv[arg_index], "--status-every") == 0 &&
                    arg_index + 1 < argc) {
             control_config.log_period_samples =
@@ -206,7 +216,9 @@ int main(int argc, char *argv[])
             vision_tracker_init(&vision_tracker);
             result = vision_tracker_start(&vision_tracker,
                                           camera_device,
-                                          vision_debug_enabled);
+                                          vision_debug_enabled,
+                                          vision_stream_enabled,
+                                          vision_stream_port);
             if (result < 0) {
                 fprintf(stderr,
                         "Failed to start vision tracker on %s: %s\n",

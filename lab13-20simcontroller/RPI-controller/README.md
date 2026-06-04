@@ -188,6 +188,33 @@ Enable low-rate camera diagnostics with:
 ./jiwy_controller 100000 500 --track --vision-debug
 ```
 
+Stream the camera frames used by the tracker with a red marker at the detected
+green-object centroid:
+
+```bash
+./jiwy_controller 100000 500 --track --vision-stream
+```
+
+The stream binds to `127.0.0.1:8080` on the Raspberry Pi. From your PC, open a
+second terminal and forward that port:
+
+```bash
+ssh -L 8080:127.0.0.1:8080 esl@esl.local
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8080/
+```
+
+Use another port if needed:
+
+```bash
+./jiwy_controller 100000 500 --track --vision-stream --vision-stream-port 8081
+ssh -L 8081:127.0.0.1:8081 esl@esl.local
+```
+
 Plot after the run:
 
 ```bash

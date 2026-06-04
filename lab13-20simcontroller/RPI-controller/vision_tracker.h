@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include <stdint.h>
+#include <stddef.h>
 
 typedef struct _GMainLoop GMainLoop;
 typedef struct _GstElement GstElement;
@@ -29,13 +30,27 @@ typedef struct {
 
 typedef struct {
     pthread_t thread;
+    pthread_t stream_thread;
     pthread_mutex_t lock;
     pthread_mutex_t state_lock;
+    pthread_mutex_t stream_lock;
     pthread_cond_t state_cond;
+    pthread_cond_t stream_cond;
     VisionTargetSnapshot latest;
     GMainLoop *loop;
     GstElement *pipeline;
     const char *camera_device;
+    uint8_t *stream_frame;
+    size_t stream_frame_size;
+    uint64_t stream_frame_sequence;
+    int stream_frame_width;
+    int stream_frame_height;
+    int stream_enabled;
+    int stream_port;
+    int stream_running;
+    int stream_thread_started;
+    int stream_listen_fd;
+    int stream_client_fd;
     int debug_enabled;
     int running;
     int thread_started;
@@ -57,7 +72,9 @@ void vision_tracker_init(VisionTracker *tracker);
  */
 int vision_tracker_start(VisionTracker *tracker,
                          const char *camera_device,
-                         int debug_enabled);
+                         int debug_enabled,
+                         int stream_enabled,
+                         int stream_port);
 
 /**
  * @brief Stop the camera thread and release GStreamer resources.
