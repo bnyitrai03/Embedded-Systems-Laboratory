@@ -43,7 +43,7 @@ static gboolean is_green_pixel(guint8 r, guint8 g, guint8 b)
     hue = 120 + (60 * ((int)b - (int)r)) / delta;
     saturation_percent = (delta * 100) / max_value;
 
-    return hue >= 60 && hue <= 170 && saturation_percent >= 35;
+    return hue >= 100 && hue <= 140 && saturation_percent >= 40;
 }
 
 static void write_le16(guint8 *out, uint16_t value)

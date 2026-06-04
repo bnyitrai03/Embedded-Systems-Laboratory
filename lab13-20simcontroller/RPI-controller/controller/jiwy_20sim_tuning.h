@@ -15,7 +15,7 @@
  */
 
 #define JIWY_YAW_CORR_GAIN 0.0
-#define JIWY_YAW_KP 0.30
+#define JIWY_YAW_KP 0.25
 #define JIWY_YAW_TAU_D 0.01
 #define JIWY_YAW_BETA 0.0
 #define JIWY_YAW_TAU_I 4.0
@@ -24,7 +24,7 @@
 
 
 #define JIWY_PITCH_CORR_GAIN 0.0
-#define JIWY_PITCH_KP 0.35
+#define JIWY_PITCH_KP 0.25
 #define JIWY_PITCH_TAU_D 0.01
 #define JIWY_PITCH_BETA 0.0
 #define JIWY_PITCH_TAU_I 8.0
