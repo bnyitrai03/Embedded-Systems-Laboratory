@@ -3,12 +3,12 @@
 #include <errno.h>
 #include <stdio.h>
 #include <time.h>
-
+#include "jiwy_config.h"
 ControlLoopConfig control_loop_default_config(void)
 {
     ControlLoopConfig config;
 
-    config.sample_period_us = 10000;
+    config.sample_period_us = CONTROLLER_SAMPLE_PERIOD;
     config.log_period_samples = 0;
     config.csv_log_path = 0;
     return config;

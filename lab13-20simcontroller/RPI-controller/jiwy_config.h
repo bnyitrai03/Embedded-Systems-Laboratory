@@ -16,6 +16,8 @@
 #define MOTOR_PWM_MAX 512u
 
 
+#define CONTROLLER_SAMPLE_PERIOD 5000u
+
 /*
  * Physical angular travel between the two mechanical stops.
  * Encoder count travel is measured during homing.
