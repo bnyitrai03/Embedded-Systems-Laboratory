@@ -15,9 +15,16 @@
  */
 #define MOTOR_PWM_MAX 512u
 
+/**
+ * @brief Control loop period amount. Unit is microseconds
+ */
+#define CONTROLLER_SAMPLE_PERIOD 3000u
 
-#define CONTROLLER_SAMPLE_PERIOD 20000u
 
+
+#define HUE_LOWER_LIMIT 100
+
+#define HUE_UPPER_LIMIT 200
 /*
  * Physical angular travel between the two mechanical stops.
  * Encoder count travel is measured during homing.

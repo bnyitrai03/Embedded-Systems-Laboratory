@@ -11,7 +11,7 @@
 
 #include <gst/app/gstappsink.h>
 #include <gst/video/video.h>
-
+#include "jiwy_config.h"
 #define VISION_FRAME_WIDTH 320
 #define VISION_FRAME_HEIGHT 240
 #define VISION_FRAME_RATE 30
@@ -47,7 +47,7 @@ static gboolean is_green_pixel(guint8 r, guint8 g, guint8 b)
     whiteness_percent = (min_value * 100) / 255;
     blackness_percent = ((255 - max_value) * 100) / 255;
 
-    return hue >= 145 && hue <= 178 &&
+    return hue >= HUE_LOWER_LIMIT && hue <= HUE_UPPER_LIMIT &&
            whiteness_percent >= 20 && whiteness_percent <= 45 &&
            blackness_percent >= 35 && blackness_percent <= 65;
 }
