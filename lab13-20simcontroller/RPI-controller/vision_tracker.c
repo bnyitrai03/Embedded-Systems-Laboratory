@@ -33,18 +33,25 @@ static gboolean is_green_pixel(guint8 r, guint8 g, guint8 b)
     guint8 max_value = MAX(r, MAX(g, b));
     guint8 min_value = MIN(r, MIN(g, b));
     int delta = max_value - min_value;
-    int hue;
-    int saturation_percent;
 
-    if (max_value < 50 || delta < 30 || g != max_value) {
+    int hue;
+    int whiteness_percent;
+    int blackness_percent;
+
+    if (max_value < 70 || delta < 20 || g != max_value) {
         return FALSE;
     }
 
     hue = 120 + (60 * ((int)b - (int)r)) / delta;
-    saturation_percent = (delta * 100) / max_value;
 
-    return hue >= 100 && hue <= 140 && saturation_percent >= 40;
+    whiteness_percent = (min_value * 100) / 255;
+    blackness_percent = ((255 - max_value) * 100) / 255;
+
+    return hue >= 145 && hue <= 178 &&
+           whiteness_percent >= 20 && whiteness_percent <= 45 &&
+           blackness_percent >= 35 && blackness_percent <= 65;
 }
+
 
 static void write_le16(guint8 *out, uint16_t value)
 {
@@ -383,7 +390,7 @@ static void pixel_to_camera_error(double object_x,
     double center_y = (double)height / 2.0;
 
     *yaw_error_rad =
-        -((object_x - center_x) / center_x) * (VISION_FOV_RAD / 2.0);
+        ((object_x - center_x) / center_x) * (VISION_FOV_RAD / 2.0);
     *pitch_error_rad =
         -((center_y - object_y) / center_y) * (VISION_FOV_RAD / 2.0);
 }
