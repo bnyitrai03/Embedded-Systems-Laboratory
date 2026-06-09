@@ -18,7 +18,7 @@
 /**
  * @brief Control loop period amount. Unit is microseconds
  */
-#define CONTROLLER_SAMPLE_PERIOD 3000u
+#define CONTROLLER_SAMPLE_PERIOD 5000u
 
 
 
