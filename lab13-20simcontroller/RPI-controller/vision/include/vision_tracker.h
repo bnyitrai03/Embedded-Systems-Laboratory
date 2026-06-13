@@ -26,6 +26,12 @@ typedef struct {
     double pitch_error_rad;
     /** Camera frame number associated with this snapshot. */
     uint64_t frame_count;
+    /** Milliseconds since the previous processed frame, or 0 for the first. */
+    double frame_interval_ms;
+    /** Microseconds spent processing this frame. */
+    double process_us;
+    /** Non-zero when the frame interval is unusually late. */
+    int late_frame;
 } VisionTargetSnapshot;
 
 typedef struct {

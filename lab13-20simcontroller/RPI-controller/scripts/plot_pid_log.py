@@ -27,7 +27,10 @@ def read_log(path):
         "pitch_output": column("pitch_output"),
         "yaw_pwm": column("yaw_pwm"),
         "pitch_pwm": column("pitch_pwm"),
+        "work_us": column("work_us"),
         "lateness_us": column("lateness_us"),
+        "spi_exchange_us": column("spi_exchange_us"),
+        "control_compute_us": column("control_compute_us"),
     }
 
 
@@ -60,7 +63,7 @@ def main():
     position_fig.suptitle(f"{path} - position and error")
     position_fig.tight_layout()
 
-    output_fig, output_axes = plt.subplots(2, 1, sharex=True, figsize=(11, 6))
+    output_fig, output_axes = plt.subplots(3, 1, sharex=True, figsize=(11, 8))
 
     output_axes[0].plot(time_s, data["yaw_output"], label="yaw output")
     output_axes[0].plot(time_s, data["pitch_output"], label="pitch output")
@@ -72,9 +75,16 @@ def main():
     output_axes[1].plot(time_s, data["pitch_pwm"], label="pitch pwm")
     output_axes[1].plot(time_s, data["lateness_us"], label="lateness us")
     output_axes[1].set_ylabel("pwm / us")
-    output_axes[1].set_xlabel("time [s]")
     output_axes[1].grid(True)
     output_axes[1].legend()
+
+    output_axes[2].plot(time_s, data["spi_exchange_us"], label="spi us")
+    output_axes[2].plot(time_s, data["control_compute_us"], label="ctrl us")
+    output_axes[2].plot(time_s, data["work_us"], label="work us")
+    output_axes[2].set_ylabel("timing [us]")
+    output_axes[2].set_xlabel("time [s]")
+    output_axes[2].grid(True)
+    output_axes[2].legend()
 
     output_fig.suptitle(f"{path} - output and timing")
     output_fig.tight_layout()

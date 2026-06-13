@@ -16,7 +16,17 @@
 typedef struct {
     VisionTracker *tracker;
     uint64_t frame_count;
+    struct timespec last_frame_time;
+    int have_last_frame_time;
 } VisionPipelineData;
+
+static long timespec_diff_us(struct timespec end, struct timespec start)
+{
+    time_t sec = end.tv_sec - start.tv_sec;
+    long nsec = end.tv_nsec - start.tv_nsec;
+
+    return (long)sec * 1000000L + nsec / 1000L;
+}
 
 static gboolean is_green_pixel(guint8 r, guint8 g, guint8 b)
 {
@@ -416,8 +426,18 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
     int marker_valid = 0;
     int marker_x = 0;
     int marker_y = 0;
+    struct timespec frame_start;
+    struct timespec frame_end;
+    long process_us = 0;
+    double frame_interval_ms = 0.0;
+    const double nominal_frame_ms = 1000.0 / (double)JIWY_VISION_FRAME_RATE;
 
     if (sample == NULL) {
+        return GST_FLOW_ERROR;
+    }
+
+    if (clock_gettime(CLOCK_MONOTONIC, &frame_start) < 0) {
+        gst_sample_unref(sample);
         return GST_FLOW_ERROR;
     }
 
@@ -471,6 +491,11 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
 
     memset(&snapshot, 0, sizeof(snapshot));
     snapshot.frame_count = data->frame_count;
+    if (data->have_last_frame_time) {
+        frame_interval_ms =
+            (double)timespec_diff_us(frame_start, data->last_frame_time) / 1000.0;
+    }
+    snapshot.frame_interval_ms = frame_interval_ms;
 
     if (green_pixels >= JIWY_VISION_MIN_GREEN_PIXELS) {
         double object_x = (double)sum_x / (double)green_pixels;
@@ -487,6 +512,19 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
                               &snapshot.yaw_error_rad,
                               &snapshot.pitch_error_rad);
     }
+
+    if (clock_gettime(CLOCK_MONOTONIC, &frame_end) < 0) {
+        gst_buffer_unmap(buffer, &map);
+        gst_sample_unref(sample);
+        return GST_FLOW_ERROR;
+    }
+    process_us = timespec_diff_us(frame_end, frame_start);
+    snapshot.process_us = (double)process_us;
+    snapshot.late_frame =
+        data->have_last_frame_time &&
+        frame_interval_ms > nominal_frame_ms * 1.5;
+    data->last_frame_time = frame_start;
+    data->have_last_frame_time = 1;
 
     update_snapshot(tracker, &snapshot);
 
@@ -506,16 +544,24 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
         data->frame_count % JIWY_VISION_DEBUG_EVERY_FRAMES == 0) {
         if (snapshot.valid) {
             printf("vision frame=%" G_GUINT64_FORMAT
-                   " yaw_err=%.4f pitch_err=%.4f pixels=%" G_GUINT64_FORMAT "\n",
+                   " yaw_err=%.4f pitch_err=%.4f pixels=%" G_GUINT64_FORMAT
+                   " dt=%.2fms proc=%.0fus late=%d\n",
                    (guint64)data->frame_count,
                    snapshot.yaw_error_rad,
                    snapshot.pitch_error_rad,
-                   (guint64)green_pixels);
+                   (guint64)green_pixels,
+                   snapshot.frame_interval_ms,
+                   snapshot.process_us,
+                   snapshot.late_frame);
         } else {
             printf("vision frame=%" G_GUINT64_FORMAT
-                   " no green object pixels=%" G_GUINT64_FORMAT "\n",
+                   " no green object pixels=%" G_GUINT64_FORMAT
+                   " dt=%.2fms proc=%.0fus late=%d\n",
                    (guint64)data->frame_count,
-                   (guint64)green_pixels);
+                   (guint64)green_pixels,
+                   snapshot.frame_interval_ms,
+                   snapshot.process_us,
+                   snapshot.late_frame);
         }
     }
 

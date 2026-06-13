@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 #include "jiwy_config.h"
 ControlLoopConfig control_loop_default_config(void)
@@ -38,19 +39,29 @@ static long timespec_diff_us(struct timespec end, struct timespec start)
 }
 
 static ControlTarget hold_schedule_target_at(const HoldSchedule *schedule,
-                                             double elapsed_s)
+                                             double elapsed_s,
+                                             int *phase_out)
 {
     double cycle_duration_s;
 
     if (schedule == 0) {
         ControlTarget target = {0.0, 0.0};
+        if (phase_out != 0) {
+            *phase_out = 0;
+        }
         return target;
     }
 
     if (!(schedule->target1_duration_s > 0.0)) {
+        if (phase_out != 0) {
+            *phase_out = 2;
+        }
         return schedule->target2;
     }
     if (!(schedule->target2_duration_s > 0.0)) {
+        if (phase_out != 0) {
+            *phase_out = 1;
+        }
         return schedule->target1;
     }
 
@@ -60,12 +71,21 @@ static ControlTarget hold_schedule_target_at(const HoldSchedule *schedule,
     }
 
     if (elapsed_s < schedule->target1_duration_s) {
+        if (phase_out != 0) {
+            *phase_out = 1;
+        }
         return schedule->target1;
     }
     if (elapsed_s < cycle_duration_s) {
+        if (phase_out != 0) {
+            *phase_out = 2;
+        }
         return schedule->target2;
     }
 
+    if (phase_out != 0) {
+        *phase_out = 2;
+    }
     return schedule->target2;
 }
 
@@ -102,6 +122,12 @@ int control_loop_run(MotorComm *comm,
     FILE *csv_log = 0;
     unsigned sample_index = 0;
     unsigned overrun_count = 0;
+    unsigned long long spi_exchange_total_us = 0;
+    unsigned long long control_compute_total_us = 0;
+    unsigned long long work_total_us = 0;
+    long spi_exchange_max_us = 0;
+    long control_compute_max_us = 0;
+    long work_max_us = 0;
     struct timespec next_deadline;
     struct timespec loop_start;
     int result;
@@ -127,7 +153,10 @@ int control_loop_run(MotorComm *comm,
                 "yaw_output,pitch_output,"
                 "yaw_pwm,pitch_pwm,"
                 "yaw_dir,pitch_dir,"
-                "work_us,lateness_us,overruns\n");
+                "work_us,lateness_us,overruns,"
+                "target_source,hold_phase,"
+                "spi_exchange_us,control_compute_us,"
+                "vision_frame_interval_ms,vision_process_us,vision_late_frame\n");
     }
 
     /*
@@ -136,12 +165,21 @@ int control_loop_run(MotorComm *comm,
      */
     while (*keep_running) {
         struct timespec work_start;
+        struct timespec spi_start;
+        struct timespec spi_end;
+        struct timespec compute_end;
         struct timespec work_end;
         double yaw_actual_rad;
         double pitch_actual_rad;
         VisionTargetSnapshot vision_snapshot;
+        TargetSource target_source = TARGET_SOURCE_FIXED;
+        int hold_phase = 0;
+        long spi_exchange_us;
+        long control_compute_us;
         long work_us;
         long lateness_us;
+
+        memset(&vision_snapshot, 0, sizeof(vision_snapshot));
 
         next_deadline = timespec_add_us(next_deadline,
                                         config->sample_period_us);
@@ -160,12 +198,26 @@ int control_loop_run(MotorComm *comm,
          * next command. That creates one sample of command delay but avoids a
          * separate "read encoders" transaction.
          */
+        result = clock_gettime(CLOCK_MONOTONIC, &spi_start);
+        if (result < 0) {
+            if (csv_log != 0) {
+                fclose(csv_log);
+            }
+            return -errno;
+        }
         result = motor_comm_exchange(comm, command, &encoders);
         if (result < 0) {
             if (csv_log != 0) {
                 fclose(csv_log);
             }
             return result;
+        }
+        result = clock_gettime(CLOCK_MONOTONIC, &spi_end);
+        if (result < 0) {
+            if (csv_log != 0) {
+                fclose(csv_log);
+            }
+            return -errno;
         }
 
         yaw_actual_rad = jiwy_yaw_rad(calibration, encoders.yaw);
@@ -174,7 +226,8 @@ int control_loop_run(MotorComm *comm,
         if (hold_schedule != 0) {
             double elapsed_s =
                 (double)timespec_diff_us(work_start, loop_start) / 1000000.0;
-            target = hold_schedule_target_at(hold_schedule, elapsed_s);
+            target = hold_schedule_target_at(hold_schedule, elapsed_s, &hold_phase);
+            target_source = TARGET_SOURCE_HOLD_SCHEDULE;
         }
 
         if (vision_tracker != 0 &&
@@ -184,6 +237,8 @@ int control_loop_run(MotorComm *comm,
                     yaw_actual_rad + vision_snapshot.yaw_error_rad;
                 target.pitch_target_rad =
                     pitch_actual_rad + vision_snapshot.pitch_error_rad;
+                target_source = TARGET_SOURCE_VISION;
+                hold_phase = 0;
             }
         }
 
@@ -193,6 +248,13 @@ int control_loop_run(MotorComm *comm,
                                            target.yaw_target_rad,
                                            target.pitch_target_rad);
         command = controller_output_to_command(output);
+        result = clock_gettime(CLOCK_MONOTONIC, &compute_end);
+        if (result < 0) {
+            if (csv_log != 0) {
+                fclose(csv_log);
+            }
+            return -errno;
+        }
 
         result = clock_gettime(CLOCK_MONOTONIC, &work_end);
         if (result < 0) {
@@ -202,24 +264,42 @@ int control_loop_run(MotorComm *comm,
             return -errno;
         }
 
+        spi_exchange_us = timespec_diff_us(spi_end, spi_start);
+        control_compute_us = timespec_diff_us(compute_end, spi_end);
         work_us = timespec_diff_us(work_end, work_start);
         lateness_us = timespec_diff_us(work_end, next_deadline);
         if (lateness_us > 0) {
             ++overrun_count;
         }
+        spi_exchange_total_us += (unsigned long long)spi_exchange_us;
+        control_compute_total_us += (unsigned long long)control_compute_us;
+        work_total_us += (unsigned long long)work_us;
+        if (spi_exchange_us > spi_exchange_max_us) {
+            spi_exchange_max_us = spi_exchange_us;
+        }
+        if (control_compute_us > control_compute_max_us) {
+            control_compute_max_us = control_compute_us;
+        }
+        if (work_us > work_max_us) {
+            work_max_us = work_us;
+        }
 
         if (config->log_period_samples != 0 &&
             sample_index % config->log_period_samples == 0) {
-            printf("enc yaw=%d pitch=%d target yaw=%.4f pitch=%.4f actual yaw=%.4f pitch=%.4f work=%ldus late=%ldus overruns=%u\n",
+            printf("enc yaw=%d pitch=%d target yaw=%.4f pitch=%.4f actual yaw=%.4f pitch=%.4f spi=%ldus ctrl=%ldus work=%ldus late=%ldus overruns=%u src=%d phase=%d\n",
                    encoders.yaw,
                    encoders.pitch,
                    target.yaw_target_rad,
                    target.pitch_target_rad,
                    yaw_actual_rad,
                    pitch_actual_rad,
+                   spi_exchange_us,
+                   control_compute_us,
                    work_us,
                    lateness_us > 0 ? lateness_us : 0,
-                   overrun_count);
+                   overrun_count,
+                   (int)target_source,
+                   hold_phase);
         }
 
         if (csv_log != 0) {
@@ -232,7 +312,10 @@ int control_loop_run(MotorComm *comm,
                     "%.9f,%.9f,"
                     "%u,%u,"
                     "%u,%u,"
-                    "%ld,%ld,%u\n",
+                    "%ld,%ld,%u,"
+                    "%d,%d,"
+                    "%ld,%ld,"
+                    "%.3f,%.3f,%d\n",
                     sample_index,
                     (double)timespec_diff_us(work_start, loop_start) / 1000000.0,
                     encoders.yaw,
@@ -251,7 +334,14 @@ int control_loop_run(MotorComm *comm,
                     command.pitch.direction,
                     work_us,
                     lateness_us > 0 ? lateness_us : 0,
-                    overrun_count);
+                    overrun_count,
+                    (int)target_source,
+                    hold_phase,
+                    spi_exchange_us,
+                    control_compute_us,
+                    vision_tracker != 0 ? vision_snapshot.frame_interval_ms : 0.0,
+                    vision_tracker != 0 ? vision_snapshot.process_us : 0.0,
+                    vision_tracker != 0 ? vision_snapshot.late_frame : 0);
         }
 
         ++sample_index;
@@ -275,6 +365,21 @@ int control_loop_run(MotorComm *comm,
 
     if (csv_log != 0) {
         fclose(csv_log);
+    }
+
+    if (sample_index > 0u) {
+        printf("timing summary: samples=%u overruns=%u "
+               "spi_avg=%.1fus spi_max=%ldus "
+               "ctrl_avg=%.1fus ctrl_max=%ldus "
+               "work_avg=%.1fus work_max=%ldus\n",
+               sample_index,
+               overrun_count,
+               (double)spi_exchange_total_us / (double)sample_index,
+               spi_exchange_max_us,
+               (double)control_compute_total_us / (double)sample_index,
+               control_compute_max_us,
+               (double)work_total_us / (double)sample_index,
+               work_max_us);
     }
 
     return motor_comm_exchange(comm, protocol_stop_command(), 0);

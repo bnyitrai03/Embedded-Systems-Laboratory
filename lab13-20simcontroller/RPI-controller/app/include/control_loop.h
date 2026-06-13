@@ -45,6 +45,13 @@ typedef struct {
     int repeat;
 } HoldSchedule;
 
+/** @brief Encoded source that produced the active control target. */
+typedef enum {
+    TARGET_SOURCE_FIXED = 0,
+    TARGET_SOURCE_HOLD_SCHEDULE = 1,
+    TARGET_SOURCE_VISION = 2
+} TargetSource;
+
 /**
  * @brief Return default control loop settings from jiwy_config.h.
  */
