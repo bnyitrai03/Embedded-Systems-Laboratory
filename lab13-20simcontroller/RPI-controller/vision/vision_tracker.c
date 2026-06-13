@@ -12,16 +12,6 @@
 #include <gst/app/gstappsink.h>
 #include <gst/video/video.h>
 #include "jiwy_config.h"
-#define VISION_FRAME_WIDTH 320
-#define VISION_FRAME_HEIGHT 240
-#define VISION_FRAME_RATE 30
-#define VISION_MIN_GREEN_PIXELS 80
-#define VISION_FOV_RAD (60.0 * M_PI / 180.0)
-#define VISION_DEFAULT_CAMERA "/dev/video0"
-#define VISION_STREAM_DEFAULT_PORT 8080
-#define VISION_STREAM_FPS_DIVISOR 3
-#define VISION_BMP_HEADER_SIZE 54
-#define VISION_STREAM_BOUNDARY "jiwyframe"
 
 typedef struct {
     VisionTracker *tracker;
@@ -38,7 +28,9 @@ static gboolean is_green_pixel(guint8 r, guint8 g, guint8 b)
     int whiteness_percent;
     int blackness_percent;
 
-    if (max_value < 70 || delta < 20 || g != max_value) {
+    if (max_value < JIWY_VISION_GREEN_MIN_CHANNEL ||
+        delta < JIWY_VISION_GREEN_MIN_DELTA ||
+        g != max_value) {
         return FALSE;
     }
 
@@ -48,8 +40,10 @@ static gboolean is_green_pixel(guint8 r, guint8 g, guint8 b)
     blackness_percent = ((255 - max_value) * 100) / 255;
 
     return hue >= HUE_LOWER_LIMIT && hue <= HUE_UPPER_LIMIT &&
-           whiteness_percent >= 20 && whiteness_percent <= 45 &&
-           blackness_percent >= 35 && blackness_percent <= 65;
+           whiteness_percent >= JIWY_VISION_GREEN_MIN_WHITENESS_PERCENT &&
+           whiteness_percent <= JIWY_VISION_GREEN_MAX_WHITENESS_PERCENT &&
+           blackness_percent >= JIWY_VISION_GREEN_MIN_BLACKNESS_PERCENT &&
+           blackness_percent <= JIWY_VISION_GREEN_MAX_BLACKNESS_PERCENT;
 }
 
 
@@ -147,7 +141,7 @@ static void publish_stream_frame(VisionTracker *tracker,
 {
     guint row_size = (guint)(((width * 3) + 3) & ~3);
     gsize pixel_data_size = (gsize)row_size * (gsize)height;
-    gsize frame_size = VISION_BMP_HEADER_SIZE + pixel_data_size;
+    gsize frame_size = JIWY_VISION_BMP_HEADER_SIZE + pixel_data_size;
     guint8 *frame;
 
     if (!tracker->stream_enabled || !tracker->stream_running) {
@@ -163,7 +157,7 @@ static void publish_stream_frame(VisionTracker *tracker,
     frame[0] = 'B';
     frame[1] = 'M';
     write_le32(frame + 2, (uint32_t)frame_size);
-    write_le32(frame + 10, VISION_BMP_HEADER_SIZE);
+    write_le32(frame + 10, JIWY_VISION_BMP_HEADER_SIZE);
     write_le32(frame + 14, 40);
     write_le32(frame + 18, (uint32_t)width);
     write_le32(frame + 22, (uint32_t)height);
@@ -173,7 +167,7 @@ static void publish_stream_frame(VisionTracker *tracker,
 
     for (int y = 0; y < height; ++y) {
         const guint8 *src = rgb + y * stride;
-        guint8 *dst = frame + VISION_BMP_HEADER_SIZE +
+        guint8 *dst = frame + JIWY_VISION_BMP_HEADER_SIZE +
             (gsize)(height - 1 - y) * row_size;
 
         for (int x = 0; x < width; ++x) {
@@ -196,7 +190,7 @@ static void publish_stream_frame(VisionTracker *tracker,
             memset(bmp_rgb, 0, (gsize)height * (gsize)bmp_stride);
             for (int y = 0; y < height; ++y) {
                 guint8 *dst = bmp_rgb + y * bmp_stride;
-                guint8 *src = frame + VISION_BMP_HEADER_SIZE +
+                guint8 *src = frame + JIWY_VISION_BMP_HEADER_SIZE +
                     (gsize)(height - 1 - y) * row_size;
                 for (int x = 0; x < width; ++x) {
                     dst[x * 3 + 0] = src[x * 3 + 2];
@@ -213,7 +207,7 @@ static void publish_stream_frame(VisionTracker *tracker,
                             marker_y);
             for (int y = 0; y < height; ++y) {
                 guint8 *src = bmp_rgb + y * bmp_stride;
-                guint8 *dst = frame + VISION_BMP_HEADER_SIZE +
+                guint8 *dst = frame + JIWY_VISION_BMP_HEADER_SIZE +
                     (gsize)(height - 1 - y) * row_size;
                 for (int x = 0; x < width; ++x) {
                     dst[x * 3 + 0] = src[x * 3 + 2];
@@ -245,7 +239,7 @@ static int send_stream_http_header(int client_fd)
         "Pragma: no-cache\r\n"
         "Connection: close\r\n"
         "Content-Type: multipart/x-mixed-replace; boundary="
-        VISION_STREAM_BOUNDARY "\r\n"
+        JIWY_VISION_STREAM_BOUNDARY "\r\n"
         "\r\n";
 
     return send_all(client_fd, header, strlen(header));
@@ -290,7 +284,7 @@ static int stream_client_loop(VisionTracker *tracker, int client_fd)
 
         header_size = snprintf(part_header,
                                sizeof(part_header),
-                               "--" VISION_STREAM_BOUNDARY "\r\n"
+                               "--" JIWY_VISION_STREAM_BOUNDARY "\r\n"
                                "Content-Type: image/bmp\r\n"
                                "Content-Length: %zu\r\n\r\n",
                                frame_size);
@@ -390,9 +384,9 @@ static void pixel_to_camera_error(double object_x,
     double center_y = (double)height / 2.0;
 
     *yaw_error_rad =
-        ((object_x - center_x) / center_x) * (VISION_FOV_RAD / 2.0);
+        ((object_x - center_x) / center_x) * (JIWY_VISION_FOV_RAD / 2.0);
     *pitch_error_rad =
-        -((center_y - object_y) / center_y) * (VISION_FOV_RAD / 2.0);
+        -((center_y - object_y) / center_y) * (JIWY_VISION_FOV_RAD / 2.0);
 }
 
 static void update_snapshot(VisionTracker *tracker,
@@ -478,7 +472,7 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
     memset(&snapshot, 0, sizeof(snapshot));
     snapshot.frame_count = data->frame_count;
 
-    if (green_pixels >= VISION_MIN_GREEN_PIXELS) {
+    if (green_pixels >= JIWY_VISION_MIN_GREEN_PIXELS) {
         double object_x = (double)sum_x / (double)green_pixels;
         double object_y = (double)sum_y / (double)green_pixels;
 
@@ -497,7 +491,7 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
     update_snapshot(tracker, &snapshot);
 
     if (tracker->stream_enabled &&
-        data->frame_count % VISION_STREAM_FPS_DIVISOR == 0) {
+        data->frame_count % JIWY_VISION_STREAM_FPS_DIVISOR == 0) {
         publish_stream_frame(tracker,
                              map.data,
                              width,
@@ -508,7 +502,8 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
                              marker_y);
     }
 
-    if (tracker->debug_enabled && data->frame_count % 30 == 0) {
+    if (tracker->debug_enabled &&
+        data->frame_count % JIWY_VISION_DEBUG_EVERY_FRAMES == 0) {
         if (snapshot.valid) {
             printf("vision frame=%" G_GUINT64_FORMAT
                    " yaw_err=%.4f pitch_err=%.4f pixels=%" G_GUINT64_FORMAT "\n",
@@ -622,20 +617,20 @@ static void *vision_thread_main(void *arg)
     g_object_set(source, "device", tracker->camera_device, NULL);
 
     source_caps = gst_caps_new_simple("image/jpeg",
-                                      "width", G_TYPE_INT, VISION_FRAME_WIDTH,
-                                      "height", G_TYPE_INT, VISION_FRAME_HEIGHT,
+                                      "width", G_TYPE_INT, JIWY_VISION_FRAME_WIDTH,
+                                      "height", G_TYPE_INT, JIWY_VISION_FRAME_HEIGHT,
                                       "framerate", GST_TYPE_FRACTION,
-                                      VISION_FRAME_RATE, 1,
+                                      JIWY_VISION_FRAME_RATE, 1,
                                       NULL);
     g_object_set(source_capsfilter, "caps", source_caps, NULL);
     gst_caps_unref(source_caps);
 
     rgb_caps = gst_caps_new_simple("video/x-raw",
                                    "format", G_TYPE_STRING, "RGB",
-                                   "width", G_TYPE_INT, VISION_FRAME_WIDTH,
-                                   "height", G_TYPE_INT, VISION_FRAME_HEIGHT,
+                                   "width", G_TYPE_INT, JIWY_VISION_FRAME_WIDTH,
+                                   "height", G_TYPE_INT, JIWY_VISION_FRAME_HEIGHT,
                                    "framerate", GST_TYPE_FRACTION,
-                                   VISION_FRAME_RATE, 1,
+                                   JIWY_VISION_FRAME_RATE, 1,
                                    NULL);
     g_object_set(rgb_capsfilter, "caps", rgb_caps, NULL);
     gst_caps_unref(rgb_caps);
@@ -746,11 +741,11 @@ int vision_tracker_start(VisionTracker *tracker,
     }
 
     tracker->camera_device =
-        camera_device != NULL ? camera_device : VISION_DEFAULT_CAMERA;
+        camera_device != NULL ? camera_device : JIWY_VISION_DEFAULT_CAMERA;
     tracker->debug_enabled = debug_enabled;
     tracker->stream_enabled = stream_enabled;
     tracker->stream_port =
-        stream_port > 0 ? stream_port : VISION_STREAM_DEFAULT_PORT;
+        stream_port > 0 ? stream_port : JIWY_VISION_STREAM_PORT;
     tracker->start_done = 0;
     tracker->start_result = 0;
     tracker->stream_running = stream_enabled;

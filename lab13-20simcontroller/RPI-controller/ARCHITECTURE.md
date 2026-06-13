@@ -35,8 +35,9 @@ FPGA encoder counters
    software zero.
 3. If `--hold` or `--track` is supplied, `main.c` reads the current encoder sample,
    initializes `TwentySimController` with that feedback and the initial target,
-   then starts `control_loop_run()` at 100 Hz.
-4. `--hold` uses a fixed target of yaw `0 rad`, pitch `0 rad`. `--track`
+   then starts `control_loop_run()` at the sample period configured in `jiwy_config.h`.
+4. `--hold` uses the configured midpoint target derived from the software travel
+   limits in `jiwy_config.h`. `--track`
    starts `vision_tracker` first and lets the control loop derive targets from
    the latest camera error.
 
@@ -74,8 +75,12 @@ angle.
 
 ## Calibration and tuning
 
-`jiwy_config.h` contains the values that should change during lab testing:
+`jiwy_config.h` contains the non-PID values that should change during lab testing:
 
+- SPI defaults
+- homing defaults
+- control-loop timing and logging defaults
+- vision defaults and green-detection thresholds
 - physical travel degrees
 - software travel limits
 
@@ -87,15 +92,16 @@ that tuning header.
 
 ## Timing assumptions
 
-The generated controllers currently use a 10 ms sample time. `main.c` derives
-the controller step size from `control_loop_default_config()` and passes it to:
+The generated controllers currently use the sample time expected by the exported
+20-sim models. `main.c` derives the controller step size from
+`control_loop_default_config()` and passes it to:
 
 ```c
-twentysim_controller_init(&controller, 0.01, ...);
+twentysim_controller_init(&controller, step_size_s, ...);
 ```
 
-and `control_loop_default_config()` uses `10000 us`. Keep these matched unless
-you also change the model sample time in 20-sim.
+and `control_loop_default_config()` reads its period from `jiwy_config.h`. Keep
+that matched to the model sample time in 20-sim.
 
 The SPI loop sends the command computed during the previous sample while reading
 the current encoder sample. This is a one-sample command delay, but it keeps the

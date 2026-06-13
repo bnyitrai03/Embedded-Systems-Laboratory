@@ -12,7 +12,7 @@ See `ARCHITECTURE.md` for the control/data-flow explanation.
 - `vision_tracker.*`: optional GStreamer green-object tracker that publishes yaw/pitch camera error in radians.
 - `homing.*`: sequential yaw/pitch software homing routine.
 - `main.c`: starts SPI, runs homing, then optionally runs fixed hold with `--hold` or vision tracking with `--track`.
-- `jiwy_config.h`: physical travel angles, PWM limit, and initial software limits.
+- `jiwy_config.h`: central non-PID configuration for SPI, homing, control-loop, vision, and travel defaults.
 - `controller/jiwy_20sim_tuning.h`: yaw/pitch PID tuning values used by the
   generated 20-sim model initializers.
 
@@ -52,28 +52,16 @@ Run homing with defaults:
 ./jiwy_controller
 ```
 
-Optional arguments are SPI speed and homing PWM:
+Run homing and then hold the configured midpoint target with the 20-sim controllers:
 
 ```sh
-./jiwy_controller 100000 250
-```
-
-Run homing and then hold the home position with the 20-sim controllers:
-
-```sh
-./jiwy_controller 100000 250 --hold
+./jiwy_controller --hold
 ```
 
 Run homing and then track a green object with the camera:
 
 ```sh
-./jiwy_controller 100000 250 --track
-```
-
-The default camera is `/dev/video0`. Choose another V4L2 camera with:
-
-```sh
-./jiwy_controller 100000 250 --track --camera /dev/video1
+./jiwy_controller --track
 ```
 
 Build the standalone SPI smoke test:
@@ -108,8 +96,9 @@ yaw:   240 degrees
 pitch: 240 degrees
 ```
 
-Edit `jiwy_config.h` when you remeasure the angular travel or want to test
-different limit assumptions. Encoder travel counts are measured during homing.
+Edit `jiwy_config.h` to change controller behavior such as SPI defaults,
+homing settings, vision settings, travel limits, and hold-target policy.
+Encoder travel counts are still measured during homing.
 
 For controller tuning, edit the named PID constants in
 `controller/jiwy_20sim_tuning.h`, rebuild, and test again. The generated
@@ -126,7 +115,8 @@ min/max normalized controller output clamp, later mapped to PWM
 ```
 
 Vision tracking is opt-in with `--track`. The camera thread expects an MJPEG
-V4L2 camera at `640x480` and decodes frames through GStreamer:
+V4L2 camera at the configured resolution in `jiwy_config.h` and decodes frames
+through GStreamer:
 
 ```text
 v4l2src -> image/jpeg caps -> jpegdec -> videoconvert -> videoscale -> RGB -> appsink
@@ -149,7 +139,7 @@ height: the image center is 0 degrees, and each edge is 30 degrees from the
 centerline. Positive yaw means the object is right of center. Positive pitch
 means the object is above center.
 
-The 100 Hz motor loop reads the latest camera result each sample. If the ball is
+The configured control loop reads the latest camera result each sample. If the ball is
 detected, the setpoint is:
 
 ```text
@@ -165,35 +155,17 @@ The controller is quiet by default. It does not write CSV logs or camera debug
 logs unless requested.
 
 ```bash
-./jiwy_controller 100000 500 --hold --log pid_log.csv
+./jiwy_controller --hold --log pid_log.csv
 ```
 
 The same CSV logging is available while tracking:
 
 ```bash
-./jiwy_controller 100000 500 --track --log yaw_pitch_test.csv
+./jiwy_controller --track --log yaw_pitch_test.csv
 ```
 
-To check control-loop timing without full CSV logging, print one status line
-every N samples. At the default 100 Hz control rate, `100` means once per
-second:
-
-```bash
-./jiwy_controller 100000 500 --track --status-every 100
-```
-
-Enable low-rate camera diagnostics with:
-
-```bash
-./jiwy_controller 100000 500 --track --vision-debug
-```
-
-Stream the camera frames used by the tracker with a red marker at the detected
-green-object centroid:
-
-```bash
-./jiwy_controller 100000 500 --track --vision-stream
-```
+Status logging, camera diagnostics, and vision streaming are configured through
+`jiwy_config.h`.
 
 The stream binds to `127.0.0.1:8080` on the Raspberry Pi. From your PC, open a
 second terminal and forward that port:
@@ -208,10 +180,10 @@ Then open:
 http://127.0.0.1:8080/
 ```
 
-Use another port if needed:
+To use another port, change the stream port in `jiwy_config.h` and then forward that same port:
 
 ```bash
-./jiwy_controller 100000 500 --track --vision-stream --vision-stream-port 8081
+./jiwy_controller --track
 ssh -L 8081:127.0.0.1:8081 esl@esl.local
 ```
 

@@ -8,9 +8,9 @@ ControlLoopConfig control_loop_default_config(void)
 {
     ControlLoopConfig config;
 
-    config.sample_period_us = CONTROLLER_SAMPLE_PERIOD;
-    config.log_period_samples = 0;
-    config.csv_log_path = 0;
+    config.sample_period_us = JIWY_CONTROL_LOOP_SAMPLE_PERIOD_US;
+    config.log_period_samples = JIWY_CONTROL_LOOP_STATUS_EVERY;
+    config.csv_log_path = JIWY_CONTROL_LOOP_DEFAULT_CSV_LOG_PATH;
     return config;
 }
 

@@ -1,6 +1,7 @@
 #ifndef RPI_SPI_MASTER_H
 #define RPI_SPI_MASTER_H
 
+#include "jiwy_config.h"
 #include "comm/include/motor_comm.h"
 
 /**
@@ -9,10 +10,10 @@
  */
 
 /** @brief Default SPI clock used for the FPGA motor controller. */
-#define RPI_SPI_DEFAULT_SPEED_HZ 100000u
+#define RPI_SPI_DEFAULT_SPEED_HZ JIWY_SPI_DEFAULT_SPEED_HZ
 
 /** @brief Default Raspberry Pi SPI channel for the FPGA HAT. */
-#define RPI_SPI_DEFAULT_CHANNEL 1u
+#define RPI_SPI_DEFAULT_CHANNEL JIWY_SPI_DEFAULT_CHANNEL
 
 /** @brief spidev-backed implementation state for Raspberry Pi + FPGA HAT. */
 typedef struct {

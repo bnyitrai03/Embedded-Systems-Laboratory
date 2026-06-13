@@ -32,7 +32,7 @@ typedef struct {
 } ControlLoopConfig;
 
 /**
- * @brief Return default 100 Hz control loop settings.
+ * @brief Return default control loop settings from jiwy_config.h.
  */
 ControlLoopConfig control_loop_default_config(void);
 
