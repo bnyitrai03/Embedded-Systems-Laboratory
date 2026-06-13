@@ -5,13 +5,14 @@ echo "[WARNING] DELIVERED AS IS. Understand the commands before running this scr
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+VERILOG_DIR="${PROJECT_DIR}/verilog"
 if [ -z "${ICOPROG_DIR:-}" ]; then
     ICOPROG_DIR=~/ws/icoprog
 fi
 
-JSON_FILE="${SCRIPT_DIR}/ice40.json"
-ASC_FILE="${SCRIPT_DIR}/ice40.asc"
-BIN_FILE="${SCRIPT_DIR}/ice40.bin"
+JSON_FILE="${VERILOG_DIR}/ice40.json"
+ASC_FILE="${VERILOG_DIR}/ice40.asc"
+BIN_FILE="${VERILOG_DIR}/ice40.bin"
 ICOPROG_BIN="${ICOPROG_DIR}/ice40.bin"
 
 SPI_DISABLED=0
@@ -24,7 +25,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo "[1/7] Synthesizing TopEntity..."
-cd "${SCRIPT_DIR}"
+cd "${VERILOG_DIR}"
 yosys -p 'synth_ice40 -top TopEntity -json ice40.json' \
     TopEntity.v \
     SPI.v \

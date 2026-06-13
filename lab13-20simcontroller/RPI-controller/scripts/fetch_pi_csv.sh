@@ -3,7 +3,9 @@ set -euo pipefail
 
 PI_HOST="${PI_HOST:-esl@esl.local}"
 PI_DIR="${PI_DIR:-~/ws/Embedded-Systems-Laboratory/lab13-20simcontroller/RPI-controller}"
-LOCAL_DIR="${LOCAL_DIR:-$(cd "$(dirname "$0")" && pwd)}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+LOCAL_DIR="${LOCAL_DIR:-${PROJECT_DIR}}"
 CSV_PATTERN="${CSV_PATTERN:-*.csv}"
 PYTHON="${PYTHON:-python3}"
 PLOT="${PLOT:-1}"
@@ -23,5 +25,5 @@ echo "Saved to $LOCAL_DIR/$latest_csv"
 
 if [ "$PLOT" != "0" ]; then
     echo "Opening plots..."
-    "$PYTHON" "$LOCAL_DIR/plot_pid_log.py" "$LOCAL_DIR/$latest_csv"
+    "$PYTHON" "${SCRIPT_DIR}/plot_pid_log.py" "$LOCAL_DIR/$latest_csv"
 fi

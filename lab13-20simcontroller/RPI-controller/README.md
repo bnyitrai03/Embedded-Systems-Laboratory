@@ -218,7 +218,7 @@ ssh -L 8081:127.0.0.1:8081 esl@esl.local
 Plot after the run:
 
 ```bash
-python3 plot_pid_log.py pid_log.csv
+python3 scripts/plot_pid_log.py pid_log.csv
 ```
 
 Install plotting dependencies if needed:
