@@ -4,13 +4,13 @@ project(jiwy_controller C)
 
 add_executable(jiwy_controller
     main.c
-    control_loop.c
-    vision_tracker.c
-    control_protocol.c
-    jiwy_calibration.c
-    twentysim_controller.c
-    homing.c
-    rpi_spi_master.c
+    app/control_loop.c
+    vision/vision_tracker.c
+    comm/control_protocol.c
+    control/jiwy_calibration.c
+    control/twentysim_controller.c
+    app/homing.c
+    comm/rpi_spi_master.c
     controller/yaw_controller/yaw_model.c
     controller/yaw_controller/yaw_integ.c
     controller/yaw_controller/yaw_funcs.c
@@ -32,6 +32,10 @@ pkg_check_modules(GSTREAMER REQUIRED
 
 target_include_directories(jiwy_controller PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/control/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/comm/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/vision/include
     ${CMAKE_CURRENT_SOURCE_DIR}/controller/yaw_controller
     ${CMAKE_CURRENT_SOURCE_DIR}/controller/pitch_controller
     ${GSTREAMER_INCLUDE_DIRS}

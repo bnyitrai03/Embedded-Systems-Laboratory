@@ -1,6 +1,6 @@
 -CC ?= gcc
 CFLAGS ?= -O2 -Wall -Wextra -std=c11
-CPPFLAGS ?= -I. -Icontroller/yaw_controller -Icontroller/pitch_controller -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L
+CPPFLAGS ?= -I. -Iapp/include -Icontrol/include -Icomm/include -Ivision/include -Icontroller/yaw_controller -Icontroller/pitch_controller -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L
 DEPFLAGS ?= -MMD -MP
 LDLIBS ?= -lm
 GST_PACKAGES = gstreamer-1.0 gstreamer-app-1.0 gstreamer-video-1.0 glib-2.0
@@ -16,13 +16,13 @@ TARGET = jiwy_controller
 
 SRCS = \
 	main.c \
-	control_loop.c \
-	vision_tracker.c \
-	control_protocol.c \
-	jiwy_calibration.c \
-	twentysim_controller.c \
-	homing.c \
-	rpi_spi_master.c \
+	app/control_loop.c \
+	vision/vision_tracker.c \
+	comm/control_protocol.c \
+	control/jiwy_calibration.c \
+	control/twentysim_controller.c \
+	app/homing.c \
+	comm/rpi_spi_master.c \
 	controller/yaw_controller/yaw_model.c \
 	controller/yaw_controller/yaw_integ.c \
 	controller/yaw_controller/yaw_funcs.c \

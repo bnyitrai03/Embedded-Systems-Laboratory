@@ -1,7 +1,7 @@
 #ifndef MOTOR_COMM_H
 #define MOTOR_COMM_H
 
-#include "control_protocol.h"
+#include "comm/include/control_protocol.h"
 
 /**
  * @file motor_comm.h

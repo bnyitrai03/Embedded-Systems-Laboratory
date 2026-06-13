@@ -1,7 +1,7 @@
 #ifndef RPI_SPI_MASTER_H
 #define RPI_SPI_MASTER_H
 
-#include "motor_comm.h"
+#include "comm/include/motor_comm.h"
 
 /**
  * @file rpi_spi_master.h

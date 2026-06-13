@@ -4,12 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "control_loop.h"
-#include "homing.h"
-#include "jiwy_calibration.h"
-#include "rpi_spi_master.h"
-#include "twentysim_controller.h"
-#include "vision_tracker.h"
+#include "app/include/control_loop.h"
+#include "app/include/homing.h"
+#include "control/include/jiwy_calibration.h"
+#include "comm/include/rpi_spi_master.h"
+#include "control/include/twentysim_controller.h"
+#include "vision/include/vision_tracker.h"
 
 static volatile sig_atomic_t keep_running = 1;
 

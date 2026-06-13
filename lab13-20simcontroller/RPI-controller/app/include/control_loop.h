@@ -3,10 +3,10 @@
 
 #include <signal.h>
 
-#include "jiwy_calibration.h"
-#include "motor_comm.h"
-#include "twentysim_controller.h"
-#include "vision_tracker.h"
+#include "control/include/jiwy_calibration.h"
+#include "comm/include/motor_comm.h"
+#include "control/include/twentysim_controller.h"
+#include "vision/include/vision_tracker.h"
 
 /**
  * @file control_loop.h

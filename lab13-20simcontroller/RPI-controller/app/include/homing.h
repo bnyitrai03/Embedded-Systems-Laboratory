@@ -4,8 +4,8 @@
 #include <signal.h>
 #include <stdint.h>
 
-#include "jiwy_calibration.h"
-#include "motor_comm.h"
+#include "control/include/jiwy_calibration.h"
+#include "comm/include/motor_comm.h"
 
 /**
  * @file homing.h

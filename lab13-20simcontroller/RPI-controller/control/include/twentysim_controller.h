@@ -1,10 +1,10 @@
 #ifndef TWENTYSIM_CONTROLLER_H
 #define TWENTYSIM_CONTROLLER_H
 
-#include "control_protocol.h"
+#include "comm/include/control_protocol.h"
 #include "controller/pitch_controller/pitch_submod.h"
 #include "controller/yaw_controller/yaw_submod.h"
-#include "jiwy_calibration.h"
+#include "control/include/jiwy_calibration.h"
 
 /**
  * @file twentysim_controller.h
