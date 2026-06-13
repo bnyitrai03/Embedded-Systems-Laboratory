@@ -66,7 +66,7 @@ void vision_tracker_init(VisionTracker *tracker);
 /**
  * @brief Start the MJPEG camera tracker thread.
  *
- * @param camera_device V4L2 device path, or NULL for /dev/video0.
+ * @param camera_device V4L2 device path, or NULL for the configured default.
  * @param debug_enabled Non-zero prints low-rate camera diagnostics.
  * @return 0 on successful thread/pipeline start, negative errno-style value.
  */

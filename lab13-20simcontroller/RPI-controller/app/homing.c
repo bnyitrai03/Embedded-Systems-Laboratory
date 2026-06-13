@@ -14,14 +14,14 @@ HomingConfig homing_default_config(void)
 {
     HomingConfig config;
 
-    config.pwm = MOTOR_PWM_MAX;
-    config.yaw_home_direction = MOTOR_DIR_NEGATIVE;
-    config.pitch_home_direction = MOTOR_DIR_NEGATIVE;
-    config.sample_period_us = 10000;
-    config.stop_window_samples = 50;
-    config.movement_threshold_counts = 2;
-    config.max_samples_per_axis = 1000;
-    config.settle_samples = 20;
+    config.pwm = JIWY_HOMING_PWM;
+    config.yaw_home_direction = JIWY_HOMING_YAW_HOME_DIRECTION;
+    config.pitch_home_direction = JIWY_HOMING_PITCH_HOME_DIRECTION;
+    config.sample_period_us = JIWY_HOMING_SAMPLE_PERIOD_US;
+    config.stop_window_samples = JIWY_HOMING_STOP_WINDOW_SAMPLES;
+    config.movement_threshold_counts = JIWY_HOMING_MOVEMENT_THRESHOLD_COUNTS;
+    config.max_samples_per_axis = JIWY_HOMING_MAX_SAMPLES_PER_AXIS;
+    config.settle_samples = JIWY_HOMING_SETTLE_SAMPLES;
     return config;
 }
 
