@@ -76,22 +76,24 @@
  * The default assumes homing moves to the negative mechanical end stop.
  */
 #define JIWY_YAW_MIN_RAD 0.0
-#define JIWY_YAW_MAX_RAD \
-    (JIWY_YAW_TRAVEL_DEGREES * JIWY_PI / 180.0)
+#define JIWY_YAW_MAX_RAD   (JIWY_YAW_TRAVEL_DEGREES * JIWY_PI / 180.0)
 
 #define JIWY_PITCH_MIN_RAD 0.0
-#define JIWY_PITCH_MAX_RAD \
-    (JIWY_PITCH_TRAVEL_DEGREES * JIWY_PI / 180.0)
+#define JIWY_PITCH_MAX_RAD (JIWY_PITCH_TRAVEL_DEGREES * JIWY_PI / 180.0)
 
 /*
- * Hold-mode target policy.
+ * Hold-mode PID calibration schedule.
  *
- * Hold uses the midpoint of the configured software travel.
+ * --hold alternates between these two configured targets.
  */
-#define JIWY_HOLD_USE_TRAVEL_MIDPOINT 1
-#define JIWY_HOLD_TARGET_YAW_RAD \
-    ((JIWY_YAW_MIN_RAD + JIWY_YAW_MAX_RAD) / 2.0)
-#define JIWY_HOLD_TARGET_PITCH_RAD \
-    ((JIWY_PITCH_MIN_RAD + JIWY_PITCH_MAX_RAD) / 2.0)
+#define JIWY_HOLD_TARGET1_YAW_RAD   (JIWY_YAW_MAX_RAD * 0.25)
+#define JIWY_HOLD_TARGET1_PITCH_RAD (JIWY_PITCH_MAX_RAD * 0.25)
+#define JIWY_HOLD_TARGET1_DURATION_S 10.0
+
+#define JIWY_HOLD_TARGET2_YAW_RAD   (JIWY_YAW_MAX_RAD * 0.75)
+#define JIWY_HOLD_TARGET2_PITCH_RAD (JIWY_PITCH_MAX_RAD * 0.75)
+#define JIWY_HOLD_TARGET2_DURATION_S 10.0
+
+#define JIWY_HOLD_SCHEDULE_REPEAT 1
 
 #endif

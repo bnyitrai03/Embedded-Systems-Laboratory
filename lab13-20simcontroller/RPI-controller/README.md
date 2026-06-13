@@ -11,7 +11,7 @@ See `ARCHITECTURE.md` for the control/data-flow explanation.
 - `control_loop.*`: time-driven position-control loop for one yaw/pitch target.
 - `vision_tracker.*`: optional GStreamer green-object tracker that publishes yaw/pitch camera error in radians.
 - `homing.*`: sequential yaw/pitch software homing routine.
-- `main.c`: starts SPI, runs homing, then optionally runs fixed hold with `--hold` or vision tracking with `--track`.
+- `main.c`: starts SPI, runs homing, then optionally runs scheduled hold calibration with `--hold` or vision tracking with `--track`.
 - `jiwy_config.h`: central non-PID configuration for SPI, homing, control-loop, vision, and travel defaults.
 - `controller/jiwy_20sim_tuning.h`: yaw/pitch PID tuning values used by the
   generated 20-sim model initializers.
@@ -52,7 +52,7 @@ Run homing with defaults:
 ./jiwy_controller
 ```
 
-Run homing and then hold the configured midpoint target with the 20-sim controllers:
+Run homing and then alternate through the configured PID-calibration setpoints:
 
 ```sh
 ./jiwy_controller --hold
@@ -97,8 +97,21 @@ pitch: 240 degrees
 ```
 
 Edit `jiwy_config.h` to change controller behavior such as SPI defaults,
-homing settings, vision settings, travel limits, and hold-target policy.
+homing settings, vision settings, travel limits, and the two hold-calibration
+targets and durations.
 Encoder travel counts are still measured during homing.
+
+The default hold schedule uses radian expressions derived in the header:
+
+```c
+#define JIWY_HOLD_TARGET1_YAW_RAD   (JIWY_YAW_MAX_RAD * 0.25)
+#define JIWY_HOLD_TARGET1_PITCH_RAD (JIWY_PITCH_MAX_RAD * 0.25)
+#define JIWY_HOLD_TARGET1_DURATION_S 10.0
+
+#define JIWY_HOLD_TARGET2_YAW_RAD   (JIWY_YAW_MAX_RAD * 0.75)
+#define JIWY_HOLD_TARGET2_PITCH_RAD (JIWY_PITCH_MAX_RAD * 0.75)
+#define JIWY_HOLD_TARGET2_DURATION_S 10.0
+```
 
 For controller tuning, edit the named PID constants in
 `controller/jiwy_20sim_tuning.h`, rebuild, and test again. The generated

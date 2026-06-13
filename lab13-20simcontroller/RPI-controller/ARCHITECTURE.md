@@ -36,8 +36,8 @@ FPGA encoder counters
 3. If `--hold` or `--track` is supplied, `main.c` reads the current encoder sample,
    initializes `TwentySimController` with that feedback and the initial target,
    then starts `control_loop_run()` at the sample period configured in `jiwy_config.h`.
-4. `--hold` uses the configured midpoint target derived from the software travel
-   limits in `jiwy_config.h`. `--track`
+4. `--hold` uses the configured two-step calibration schedule from
+   `jiwy_config.h`. `--track`
    starts `vision_tracker` first and lets the control loop derive targets from
    the latest camera error.
 
@@ -57,12 +57,13 @@ code do not need to change.
 
 ### Control target
 
-`control_loop_run()` accepts a fixed `ControlTarget` and an optional
-`VisionTracker`. A null tracker keeps the hold loop simple during motor
-bring-up. A non-null tracker updates the target from the latest camera result.
+`control_loop_run()` accepts a base `ControlTarget`, an optional hold schedule,
+and an optional `VisionTracker`. A configured hold schedule rotates between two
+fixed setpoints for PID calibration. A non-null tracker updates the target from
+the latest camera result.
 Other target sources can follow the same pattern:
 
-- fixed-position hold
+- scripted calibration hold schedule
 - manual joystick input
 - scripted setpoints
 - vision target tracking with `--track`
@@ -81,6 +82,7 @@ angle.
 - homing defaults
 - control-loop timing and logging defaults
 - vision defaults and green-detection thresholds
+- hold schedule targets and durations
 - physical travel degrees
 - software travel limits
 

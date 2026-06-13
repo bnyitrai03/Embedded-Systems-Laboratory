@@ -31,6 +31,20 @@ typedef struct {
     const char *csv_log_path;
 } ControlLoopConfig;
 
+/** @brief Two-step repeating hold schedule used for PID calibration. */
+typedef struct {
+    /** First scheduled hold target. */
+    ControlTarget target1;
+    /** Time to keep the first target active in seconds. */
+    double target1_duration_s;
+    /** Second scheduled hold target. */
+    ControlTarget target2;
+    /** Time to keep the second target active in seconds. */
+    double target2_duration_s;
+    /** Nonzero repeats target1 and target2 forever. */
+    int repeat;
+} HoldSchedule;
+
 /**
  * @brief Return default control loop settings from jiwy_config.h.
  */
@@ -50,6 +64,7 @@ int control_loop_run(MotorComm *comm,
                      const JiwyCalibration *calibration,
                      const ControlLoopConfig *config,
                      ControlTarget target,
+                     const HoldSchedule *hold_schedule,
                      VisionTracker *vision_tracker,
                      volatile sig_atomic_t *keep_running);
 

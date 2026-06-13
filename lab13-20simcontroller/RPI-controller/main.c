@@ -24,7 +24,7 @@ static void print_usage(const char *program)
     fprintf(stderr,
             "Usage: %s [--hold|--track] [--log csv_path]\n"
             "Default config: SPI=%u Hz channel=%u, homing PWM=%u of %u\n"
-            "--hold keeps the midpoint of configured software travel after homing.\n"
+            "--hold runs the configured two-step calibration schedule after homing.\n"
             "--track follows a green object using camera and streaming settings from jiwy_config.h.\n",
             program,
             RPI_SPI_DEFAULT_SPEED_HZ,
@@ -41,9 +41,12 @@ int main(int argc, char *argv[])
     RpiSpiComm spi = {.fd = -1, .speed_hz = 0, .channel = 0};
     MotorComm comm;
     ControlLoopConfig control_config = control_loop_default_config();
-    ControlTarget hold_target = {
-        JIWY_HOLD_TARGET_YAW_RAD,
-        JIWY_HOLD_TARGET_PITCH_RAD
+    HoldSchedule hold_schedule = {
+        {JIWY_HOLD_TARGET1_YAW_RAD, JIWY_HOLD_TARGET1_PITCH_RAD},
+        JIWY_HOLD_TARGET1_DURATION_S,
+        {JIWY_HOLD_TARGET2_YAW_RAD, JIWY_HOLD_TARGET2_PITCH_RAD},
+        JIWY_HOLD_TARGET2_DURATION_S,
+        JIWY_HOLD_SCHEDULE_REPEAT
     };
     VisionTracker vision_tracker;
     VisionTracker *active_vision_tracker = 0;
@@ -130,7 +133,7 @@ int main(int argc, char *argv[])
     if (run_hold_loop || run_track_loop) {
         EncoderSample initial_encoders;
         TwentySimController controller;
-        ControlTarget initial_target = hold_target;
+        ControlTarget initial_target = hold_schedule.target1;
         double controller_step_size_s =
             (double)control_config.sample_period_us / 1000000.0;
         /*
@@ -182,9 +185,17 @@ int main(int argc, char *argv[])
             printf("Starting vision tracking control loop using %s\n",
                    camera_device);
         } else {
-            printf("Starting fixed target control loop at configured midpoint yaw=%.4f rad, pitch=%.4f rad\n",
-                   hold_target.yaw_target_rad,
-                   hold_target.pitch_target_rad);
+            printf("Starting hold calibration schedule:\n");
+            printf("  target1 yaw=%.4f rad pitch=%.4f rad duration=%.2f s\n",
+                   hold_schedule.target1.yaw_target_rad,
+                   hold_schedule.target1.pitch_target_rad,
+                   hold_schedule.target1_duration_s);
+            printf("  target2 yaw=%.4f rad pitch=%.4f rad duration=%.2f s\n",
+                   hold_schedule.target2.yaw_target_rad,
+                   hold_schedule.target2.pitch_target_rad,
+                   hold_schedule.target2_duration_s);
+            printf("  repeat=%s\n",
+                   hold_schedule.repeat ? "on" : "off");
         }
         if (control_config.csv_log_path != 0) {
             printf("Writing control-loop CSV log to %s\n",
@@ -195,6 +206,7 @@ int main(int argc, char *argv[])
                                   &calibration,
                                   &control_config,
                                   initial_target,
+                                  run_hold_loop ? &hold_schedule : 0,
                                   active_vision_tracker,
                                   &keep_running);
         motor_comm_exchange(&comm, protocol_stop_command(), 0);

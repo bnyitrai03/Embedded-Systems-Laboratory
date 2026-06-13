@@ -1,6 +1,7 @@
 #include "control_loop.h"
 
 #include <errno.h>
+#include <math.h>
 #include <stdio.h>
 #include <time.h>
 #include "jiwy_config.h"
@@ -36,6 +37,38 @@ static long timespec_diff_us(struct timespec end, struct timespec start)
     return (long)sec * 1000000L + nsec / 1000L;
 }
 
+static ControlTarget hold_schedule_target_at(const HoldSchedule *schedule,
+                                             double elapsed_s)
+{
+    double cycle_duration_s;
+
+    if (schedule == 0) {
+        ControlTarget target = {0.0, 0.0};
+        return target;
+    }
+
+    if (!(schedule->target1_duration_s > 0.0)) {
+        return schedule->target2;
+    }
+    if (!(schedule->target2_duration_s > 0.0)) {
+        return schedule->target1;
+    }
+
+    cycle_duration_s = schedule->target1_duration_s + schedule->target2_duration_s;
+    if (schedule->repeat && cycle_duration_s > 0.0) {
+        elapsed_s = fmod(elapsed_s, cycle_duration_s);
+    }
+
+    if (elapsed_s < schedule->target1_duration_s) {
+        return schedule->target1;
+    }
+    if (elapsed_s < cycle_duration_s) {
+        return schedule->target2;
+    }
+
+    return schedule->target2;
+}
+
 static int sleep_until(struct timespec deadline)
 {
     int result;
@@ -59,6 +92,7 @@ int control_loop_run(MotorComm *comm,
                      const JiwyCalibration *calibration,
                      const ControlLoopConfig *config,
                      ControlTarget target,
+                     const HoldSchedule *hold_schedule,
                      VisionTracker *vision_tracker,
                      volatile sig_atomic_t *keep_running)
 {
@@ -136,6 +170,12 @@ int control_loop_run(MotorComm *comm,
 
         yaw_actual_rad = jiwy_yaw_rad(calibration, encoders.yaw);
         pitch_actual_rad = jiwy_pitch_rad(calibration, encoders.pitch);
+
+        if (hold_schedule != 0) {
+            double elapsed_s =
+                (double)timespec_diff_us(work_start, loop_start) / 1000000.0;
+            target = hold_schedule_target_at(hold_schedule, elapsed_s);
+        }
 
         if (vision_tracker != 0 &&
             vision_tracker_read_latest(vision_tracker, &vision_snapshot) == 0) {
