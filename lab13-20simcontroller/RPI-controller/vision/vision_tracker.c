@@ -36,6 +36,8 @@ typedef struct {
     int min_y;
     int max_x;
     int max_y;
+    double raw_object_x;
+    double raw_object_y;
     double object_x;
     double object_y;
 } VisionBlobDetection;
@@ -53,7 +55,6 @@ static gboolean is_green_pixel(guint8 r, guint8 g, guint8 b)
     guint8 max_value = MAX(r, MAX(g, b));
     guint8 min_value = MIN(r, MIN(g, b));
     int delta = max_value - min_value;
-
     int hue;
     int whiteness_percent;
     int blackness_percent;
@@ -65,11 +66,11 @@ static gboolean is_green_pixel(guint8 r, guint8 g, guint8 b)
     }
 
     hue = 120 + (60 * ((int)b - (int)r)) / delta;
+    whiteness_percent = ((int)min_value * 100) / 255;
+    blackness_percent = ((255 - (int)max_value) * 100) / 255;
 
-    whiteness_percent = (min_value * 100) / 255;
-    blackness_percent = ((255 - max_value) * 100) / 255;
-
-    return hue >= HUE_LOWER_LIMIT && hue <= HUE_UPPER_LIMIT &&
+    return hue >= HUE_LOWER_LIMIT &&
+           hue <= HUE_UPPER_LIMIT &&
            whiteness_percent >= JIWY_VISION_GREEN_MIN_WHITENESS_PERCENT &&
            whiteness_percent <= JIWY_VISION_GREEN_MAX_WHITENESS_PERCENT &&
            blackness_percent >= JIWY_VISION_GREEN_MIN_BLACKNESS_PERCENT &&
@@ -249,6 +250,8 @@ static void find_green_blob(VisionPipelineData *data,
                 detection->min_y = min_y;
                 detection->max_x = max_x;
                 detection->max_y = max_y;
+                detection->raw_object_x = object_x;
+                detection->raw_object_y = object_y;
                 detection->object_x = object_x;
                 detection->object_y = object_y;
                 best_score = score;
@@ -292,6 +295,30 @@ static void smooth_blob_detection(VisionPipelineData *data,
     data->lost_frames = 0;
 }
 
+static void pixel_to_camera_error(double object_x,
+                                  double object_y,
+                                  int width,
+                                  int height,
+                                  double *yaw_error_rad,
+                                  double *pitch_error_rad)
+{
+    double center_x = (double)width / 2.0;
+    double center_y = (double)height / 2.0;
+    double normalized_x = (object_x - center_x) / center_x;
+    double normalized_y = (center_y - object_y) / center_y;
+    double yaw = atan(normalized_x * tan(JIWY_VISION_HORIZONTAL_FOV_RAD / 2.0));
+    double pitch = atan(normalized_y * tan(JIWY_VISION_VERTICAL_FOV_RAD / 2.0));
+
+    if (fabs(yaw) < JIWY_VISION_YAW_DEADBAND_RAD) {
+        yaw = 0.0;
+    }
+    if (fabs(pitch) < JIWY_VISION_PITCH_DEADBAND_RAD) {
+        pitch = 0.0;
+    }
+
+    *yaw_error_rad = yaw;
+    *pitch_error_rad = pitch;
+}
 
 static void write_le16(guint8 *out, uint16_t value)
 {
@@ -345,35 +372,277 @@ static void close_stream_fd(int *fd)
     }
 }
 
-static void draw_red_marker(guint8 *rgb,
-                            int width,
-                            int height,
-                            int stride,
-                            int center_x,
-                            int center_y)
+static void set_rgb(guint8 *rgb,
+                    int width,
+                    int height,
+                    int stride,
+                    int x,
+                    int y,
+                    guint8 r,
+                    guint8 g,
+                    guint8 b)
 {
-    const int radius = 5;
+    guint8 *pixel;
 
-    for (int y = center_y - radius; y <= center_y + radius; ++y) {
-        for (int x = center_x - radius; x <= center_x + radius; ++x) {
+    if (x < 0 || x >= width || y < 0 || y >= height) {
+        return;
+    }
+
+    pixel = rgb + y * stride + x * 3;
+    pixel[0] = r;
+    pixel[1] = g;
+    pixel[2] = b;
+}
+
+static void draw_cross(guint8 *rgb,
+                       int width,
+                       int height,
+                       int stride,
+                       int center_x,
+                       int center_y,
+                       int radius,
+                       guint8 r,
+                       guint8 g,
+                       guint8 b)
+{
+    for (int d = -radius; d <= radius; ++d) {
+        set_rgb(rgb, width, height, stride, center_x + d, center_y, r, g, b);
+        set_rgb(rgb, width, height, stride, center_x, center_y + d, r, g, b);
+    }
+}
+
+static void draw_circle(guint8 *rgb,
+                        int width,
+                        int height,
+                        int stride,
+                        int center_x,
+                        int center_y,
+                        int radius,
+                        guint8 r,
+                        guint8 g,
+                        guint8 b)
+{
+    int radius_sq = radius * radius;
+    int thickness = MAX(6, radius / 8);
+
+    if (radius < 2) {
+        return;
+    }
+
+    for (int y = center_y - radius - 1; y <= center_y + radius + 1; ++y) {
+        for (int x = center_x - radius - 1; x <= center_x + radius + 1; ++x) {
             int dx = x - center_x;
             int dy = y - center_y;
-            guint8 *pixel;
+            int distance_sq = dx * dx + dy * dy;
 
-            if (x < 0 || x >= width || y < 0 || y >= height) {
-                continue;
+            if (abs(distance_sq - radius_sq) <= thickness) {
+                set_rgb(rgb, width, height, stride, x, y, r, g, b);
             }
-            if (dx * dx + dy * dy > radius * radius &&
-                dx != 0 && dy != 0) {
-                continue;
-            }
-
-            pixel = rgb + y * stride + x * 3;
-            pixel[0] = 255;
-            pixel[1] = 0;
-            pixel[2] = 0;
         }
     }
+}
+
+static guint8 glyph_row(char ch, int row)
+{
+    static const guint8 glyph_space[7] = {0, 0, 0, 0, 0, 0, 0};
+    static const guint8 glyph_dash[7] = {0, 0, 0, 31, 0, 0, 0};
+    static const guint8 glyph_dot[7] = {0, 0, 0, 0, 0, 12, 12};
+    static const guint8 glyph_0[7] = {14, 17, 19, 21, 25, 17, 14};
+    static const guint8 glyph_1[7] = {4, 12, 4, 4, 4, 4, 14};
+    static const guint8 glyph_2[7] = {14, 17, 1, 2, 4, 8, 31};
+    static const guint8 glyph_3[7] = {30, 1, 1, 14, 1, 1, 30};
+    static const guint8 glyph_4[7] = {2, 6, 10, 18, 31, 2, 2};
+    static const guint8 glyph_5[7] = {31, 16, 16, 30, 1, 1, 30};
+    static const guint8 glyph_6[7] = {14, 16, 16, 30, 17, 17, 14};
+    static const guint8 glyph_7[7] = {31, 1, 2, 4, 8, 8, 8};
+    static const guint8 glyph_8[7] = {14, 17, 17, 14, 17, 17, 14};
+    static const guint8 glyph_9[7] = {14, 17, 17, 15, 1, 1, 14};
+    static const guint8 glyph_a[7] = {14, 17, 17, 31, 17, 17, 17};
+    static const guint8 glyph_b[7] = {30, 17, 17, 30, 17, 17, 30};
+    static const guint8 glyph_c[7] = {14, 17, 16, 16, 16, 17, 14};
+    static const guint8 glyph_d[7] = {30, 17, 17, 17, 17, 17, 30};
+    static const guint8 glyph_e[7] = {31, 16, 16, 30, 16, 16, 31};
+    static const guint8 glyph_g[7] = {14, 17, 16, 23, 17, 17, 15};
+    static const guint8 glyph_h[7] = {17, 17, 17, 31, 17, 17, 17};
+    static const guint8 glyph_i[7] = {14, 4, 4, 4, 4, 4, 14};
+    static const guint8 glyph_l[7] = {16, 16, 16, 16, 16, 16, 31};
+    static const guint8 glyph_m[7] = {17, 27, 21, 21, 17, 17, 17};
+    static const guint8 glyph_n[7] = {17, 25, 21, 19, 17, 17, 17};
+    static const guint8 glyph_o[7] = {14, 17, 17, 17, 17, 17, 14};
+    static const guint8 glyph_p[7] = {30, 17, 17, 30, 16, 16, 16};
+    static const guint8 glyph_r[7] = {30, 17, 17, 30, 20, 18, 17};
+    static const guint8 glyph_s[7] = {15, 16, 16, 14, 1, 1, 30};
+    static const guint8 glyph_t[7] = {31, 4, 4, 4, 4, 4, 4};
+    static const guint8 glyph_u[7] = {17, 17, 17, 17, 17, 17, 14};
+    static const guint8 glyph_w[7] = {17, 17, 17, 21, 21, 21, 10};
+    static const guint8 glyph_y[7] = {17, 17, 10, 4, 4, 4, 4};
+    const guint8 *glyph = glyph_space;
+
+    switch (ch) {
+    case '-': glyph = glyph_dash; break;
+    case '.': glyph = glyph_dot; break;
+    case '0': glyph = glyph_0; break;
+    case '1': glyph = glyph_1; break;
+    case '2': glyph = glyph_2; break;
+    case '3': glyph = glyph_3; break;
+    case '4': glyph = glyph_4; break;
+    case '5': glyph = glyph_5; break;
+    case '6': glyph = glyph_6; break;
+    case '7': glyph = glyph_7; break;
+    case '8': glyph = glyph_8; break;
+    case '9': glyph = glyph_9; break;
+    case 'A': glyph = glyph_a; break;
+    case 'B': glyph = glyph_b; break;
+    case 'C': glyph = glyph_c; break;
+    case 'D': glyph = glyph_d; break;
+    case 'E': glyph = glyph_e; break;
+    case 'G': glyph = glyph_g; break;
+    case 'H': glyph = glyph_h; break;
+    case 'I': glyph = glyph_i; break;
+    case 'L': glyph = glyph_l; break;
+    case 'M': glyph = glyph_m; break;
+    case 'N': glyph = glyph_n; break;
+    case 'O': glyph = glyph_o; break;
+    case 'P': glyph = glyph_p; break;
+    case 'R': glyph = glyph_r; break;
+    case 'S': glyph = glyph_s; break;
+    case 'T': glyph = glyph_t; break;
+    case 'U': glyph = glyph_u; break;
+    case 'W': glyph = glyph_w; break;
+    case 'Y': glyph = glyph_y; break;
+    default: break;
+    }
+
+    return glyph[row];
+}
+
+static void draw_text(guint8 *rgb,
+                      int width,
+                      int height,
+                      int stride,
+                      int x,
+                      int y,
+                      const char *text,
+                      guint8 r,
+                      guint8 g,
+                      guint8 b)
+{
+    const int scale = 2;
+    int cursor_x = x;
+
+    for (const char *p = text; *p != '\0'; ++p) {
+        for (int row = 0; row < 7; ++row) {
+            guint8 bits = glyph_row(*p, row);
+            for (int col = 0; col < 5; ++col) {
+                if ((bits & (guint8)(1u << (4 - col))) == 0) {
+                    continue;
+                }
+                for (int sy = 0; sy < scale; ++sy) {
+                    for (int sx = 0; sx < scale; ++sx) {
+                        set_rgb(rgb,
+                                width,
+                                height,
+                                stride,
+                                cursor_x + col * scale + sx,
+                                y + row * scale + sy,
+                                r,
+                                g,
+                                b);
+                    }
+                }
+            }
+        }
+        cursor_x += 6 * scale;
+    }
+}
+
+static void annotate_stream_frame(guint8 *annotated,
+                                  const guint8 *rgb,
+                                  int width,
+                                  int height,
+                                  int stride,
+                                  const VisionBlobDetection *detection,
+                                  const VisionTargetSnapshot *snapshot)
+{
+    char line[96];
+
+    for (int y = 0; y < height; ++y) {
+        memcpy(annotated + y * width * 3,
+               rgb + y * stride,
+               (size_t)width * 3u);
+    }
+
+    draw_cross(annotated,
+               width,
+               height,
+               width * 3,
+               width / 2,
+               height / 2,
+               9,
+               60,
+               160,
+               255);
+
+    if (snapshot->valid && detection->valid) {
+        int center_x = (detection->min_x + detection->max_x) / 2;
+        int center_y = (detection->min_y + detection->max_y) / 2;
+        int blob_width = detection->max_x - detection->min_x + 1;
+        int blob_height = detection->max_y - detection->min_y + 1;
+        int radius = MAX(blob_width, blob_height) / 2 + 4;
+
+        draw_circle(annotated,
+                    width,
+                    height,
+                    width * 3,
+                    center_x,
+                    center_y,
+                    radius,
+                    255,
+                    220,
+                    40);
+        draw_cross(annotated,
+                   width,
+                   height,
+                   width * 3,
+                   (int)(detection->object_x + 0.5),
+                   (int)(detection->object_y + 0.5),
+                   8,
+                   255,
+                   255,
+                   255);
+    }
+
+    draw_text(annotated,
+              width,
+              height,
+              width * 3,
+              8,
+              8,
+              snapshot->valid ? "DETECTED" : "NO TARGET",
+              snapshot->valid ? 40 : 255,
+              snapshot->valid ? 255 : 60,
+              snapshot->valid ? 80 : 60);
+
+    snprintf(line,
+             sizeof(line),
+             "YAW %.3f PITCH %.3f",
+             snapshot->yaw_error_rad,
+             snapshot->pitch_error_rad);
+    draw_text(annotated, width, height, width * 3, 8, 28, line, 255, 255, 255);
+
+    snprintf(line,
+             sizeof(line),
+             "BLOB %llu GREEN %llu",
+             (unsigned long long)detection->blob_pixels,
+             (unsigned long long)detection->total_green_pixels);
+    draw_text(annotated, width, height, width * 3, 8, 48, line, 255, 255, 255);
+
+    snprintf(line,
+             sizeof(line),
+             "PROC %.0fUS DT %.1fMS",
+             snapshot->process_us,
+             snapshot->frame_interval_ms);
+    draw_text(annotated, width, height, width * 3, 8, 68, line, 255, 255, 255);
 }
 
 static void publish_stream_frame(VisionTracker *tracker,
@@ -381,23 +650,37 @@ static void publish_stream_frame(VisionTracker *tracker,
                                  int width,
                                  int height,
                                  int stride,
-                                 int marker_valid,
-                                 int marker_x,
-                                 int marker_y)
+                                 const VisionBlobDetection *detection,
+                                 const VisionTargetSnapshot *snapshot)
 {
     guint row_size = (guint)(((width * 3) + 3) & ~3);
     gsize pixel_data_size = (gsize)row_size * (gsize)height;
     gsize frame_size = JIWY_VISION_BMP_HEADER_SIZE + pixel_data_size;
+    guint8 *annotated;
     guint8 *frame;
 
     if (!tracker->stream_enabled || !tracker->stream_running) {
         return;
     }
 
-    frame = (guint8 *)malloc(frame_size);
-    if (frame == NULL) {
+    annotated = (guint8 *)malloc((gsize)width * (gsize)height * 3u);
+    if (annotated == NULL) {
         return;
     }
+
+    frame = (guint8 *)malloc(frame_size);
+    if (frame == NULL) {
+        free(annotated);
+        return;
+    }
+
+    annotate_stream_frame(annotated,
+                          rgb,
+                          width,
+                          height,
+                          stride,
+                          detection,
+                          snapshot);
 
     memset(frame, 0, frame_size);
     frame[0] = 'B';
@@ -412,7 +695,7 @@ static void publish_stream_frame(VisionTracker *tracker,
     write_le32(frame + 34, (uint32_t)pixel_data_size);
 
     for (int y = 0; y < height; ++y) {
-        const guint8 *src = rgb + y * stride;
+        const guint8 *src = annotated + y * width * 3;
         guint8 *dst = frame + JIWY_VISION_BMP_HEADER_SIZE +
             (gsize)(height - 1 - y) * row_size;
 
@@ -420,48 +703,6 @@ static void publish_stream_frame(VisionTracker *tracker,
             dst[x * 3 + 0] = src[x * 3 + 2];
             dst[x * 3 + 1] = src[x * 3 + 1];
             dst[x * 3 + 2] = src[x * 3 + 0];
-        }
-    }
-
-    if (marker_valid) {
-        int bmp_stride = (int)row_size;
-        int bmp_y = height - 1 - marker_y;
-        guint8 *bmp_rgb = (guint8 *)malloc((gsize)height * (gsize)bmp_stride);
-
-        /*
-         * Reuse the RGB marker routine on a temporary top-down view, then copy
-         * it back to BMP BGR. This keeps the marker clipping logic single-use.
-         */
-        if (bmp_rgb != NULL) {
-            memset(bmp_rgb, 0, (gsize)height * (gsize)bmp_stride);
-            for (int y = 0; y < height; ++y) {
-                guint8 *dst = bmp_rgb + y * bmp_stride;
-                guint8 *src = frame + JIWY_VISION_BMP_HEADER_SIZE +
-                    (gsize)(height - 1 - y) * row_size;
-                for (int x = 0; x < width; ++x) {
-                    dst[x * 3 + 0] = src[x * 3 + 2];
-                    dst[x * 3 + 1] = src[x * 3 + 1];
-                    dst[x * 3 + 2] = src[x * 3 + 0];
-                }
-            }
-            (void)bmp_y;
-            draw_red_marker(bmp_rgb,
-                            width,
-                            height,
-                            bmp_stride,
-                            marker_x,
-                            marker_y);
-            for (int y = 0; y < height; ++y) {
-                guint8 *src = bmp_rgb + y * bmp_stride;
-                guint8 *dst = frame + JIWY_VISION_BMP_HEADER_SIZE +
-                    (gsize)(height - 1 - y) * row_size;
-                for (int x = 0; x < width; ++x) {
-                    dst[x * 3 + 0] = src[x * 3 + 2];
-                    dst[x * 3 + 1] = src[x * 3 + 1];
-                    dst[x * 3 + 2] = src[x * 3 + 0];
-                }
-            }
-            free(bmp_rgb);
         }
     }
 
@@ -474,6 +715,7 @@ static void publish_stream_frame(VisionTracker *tracker,
     ++tracker->stream_frame_sequence;
     pthread_cond_broadcast(&tracker->stream_cond);
     pthread_mutex_unlock(&tracker->stream_lock);
+    free(annotated);
 }
 
 static int send_stream_http_header(int client_fd)
@@ -619,22 +861,6 @@ static void *vision_stream_thread_main(void *arg)
     return NULL;
 }
 
-static void pixel_to_camera_error(double object_x,
-                                  double object_y,
-                                  int width,
-                                  int height,
-                                  double *yaw_error_rad,
-                                  double *pitch_error_rad)
-{
-    double center_x = (double)width / 2.0;
-    double center_y = (double)height / 2.0;
-
-    *yaw_error_rad =
-        ((object_x - center_x) / center_x) * (JIWY_VISION_FOV_RAD / 2.0);
-    *pitch_error_rad =
-        -((center_y - object_y) / center_y) * (JIWY_VISION_FOV_RAD / 2.0);
-}
-
 static void update_snapshot(VisionTracker *tracker,
                             const VisionTargetSnapshot *snapshot)
 {
@@ -658,9 +884,6 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
     int stride;
     size_t pixel_count;
     VisionBlobDetection detection;
-    int marker_valid = 0;
-    int marker_x = 0;
-    int marker_y = 0;
     struct timespec frame_start;
     struct timespec frame_end;
     long process_us = 0;
@@ -737,9 +960,6 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
 
     if (detection.valid) {
         snapshot.valid = 1;
-        marker_valid = 1;
-        marker_x = (int)(detection.object_x + 0.5);
-        marker_y = (int)(detection.object_y + 0.5);
         pixel_to_camera_error(detection.object_x,
                               detection.object_y,
                               width,
@@ -770,9 +990,8 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
                              width,
                              height,
                              stride,
-                             marker_valid,
-                             marker_x,
-                             marker_y);
+                             &detection,
+                             &snapshot);
     }
 
     if (tracker->debug_enabled &&

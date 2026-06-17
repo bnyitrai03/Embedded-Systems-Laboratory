@@ -1,4 +1,4 @@
--CC ?= gcc
+CC ?= gcc
 CFLAGS ?= -O2 -Wall -Wextra -std=c11
 CPPFLAGS ?= -I. -Iapp/include -Icontrol/include -Icomm/include -Ivision/include -Icontroller/yaw_controller -Icontroller/pitch_controller -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L
 DEPFLAGS ?= -MMD -MP

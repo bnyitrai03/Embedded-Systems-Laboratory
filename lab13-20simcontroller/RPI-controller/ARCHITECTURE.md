@@ -70,9 +70,10 @@ Other target sources can follow the same pattern:
 
 Vision avoids blocking the motor loop by processing camera frames on its own
 thread. The control loop only copies a small mutex-protected snapshot. When the
-green object is detected, target radians are computed as current encoder angle
-plus camera error. When it is not detected, the target is the current encoder
-angle.
+green object is detected on a new camera frame, target radians are computed as
+current encoder angle plus camera error. That absolute target is reused until
+the next camera frame. When the object is lost or the camera result goes stale,
+the target is the current encoder angle.
 
 ## Calibration and tuning
 

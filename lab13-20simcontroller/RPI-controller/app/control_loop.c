@@ -130,6 +130,11 @@ int control_loop_run(MotorComm *comm,
     long work_max_us = 0;
     struct timespec next_deadline;
     struct timespec loop_start;
+    uint64_t last_vision_frame_count = 0;
+    unsigned stale_vision_samples = JIWY_VISION_MAX_STALE_CONTROL_SAMPLES + 1u;
+    int have_vision_frame_count = 0;
+    ControlTarget active_vision_target = target;
+    int have_active_vision_target = 0;
     int result;
 
     result = clock_gettime(CLOCK_MONOTONIC, &next_deadline);
@@ -230,15 +235,38 @@ int control_loop_run(MotorComm *comm,
             target_source = TARGET_SOURCE_HOLD_SCHEDULE;
         }
 
-        if (vision_tracker != 0 &&
-            vision_tracker_read_latest(vision_tracker, &vision_snapshot) == 0) {
-            if (vision_snapshot.valid) {
-                target.yaw_target_rad =
-                    yaw_actual_rad + vision_snapshot.yaw_error_rad;
-                target.pitch_target_rad =
-                    pitch_actual_rad + vision_snapshot.pitch_error_rad;
+        if (vision_tracker != 0) {
+            target.yaw_target_rad = yaw_actual_rad;
+            target.pitch_target_rad = pitch_actual_rad;
+            target_source = TARGET_SOURCE_FIXED;
+            hold_phase = 0;
+
+            if (vision_tracker_read_latest(vision_tracker, &vision_snapshot) == 0 &&
+                vision_snapshot.valid) {
+                if (!have_vision_frame_count ||
+                    vision_snapshot.frame_count != last_vision_frame_count) {
+                    stale_vision_samples = 0;
+                    last_vision_frame_count = vision_snapshot.frame_count;
+                    have_vision_frame_count = 1;
+                    active_vision_target.yaw_target_rad =
+                        yaw_actual_rad + vision_snapshot.yaw_error_rad;
+                    active_vision_target.pitch_target_rad =
+                        pitch_actual_rad + vision_snapshot.pitch_error_rad;
+                    have_active_vision_target = 1;
+                } else if (stale_vision_samples <=
+                           JIWY_VISION_MAX_STALE_CONTROL_SAMPLES) {
+                    ++stale_vision_samples;
+                }
+            } else {
+                stale_vision_samples =
+                    JIWY_VISION_MAX_STALE_CONTROL_SAMPLES + 1u;
+                have_active_vision_target = 0;
+            }
+
+            if (have_active_vision_target &&
+                stale_vision_samples <= JIWY_VISION_MAX_STALE_CONTROL_SAMPLES) {
+                target = active_vision_target;
                 target_source = TARGET_SOURCE_VISION;
-                hold_phase = 0;
             }
         }
 

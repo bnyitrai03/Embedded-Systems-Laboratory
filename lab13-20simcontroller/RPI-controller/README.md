@@ -9,7 +9,7 @@ See `ARCHITECTURE.md` for the control/data-flow explanation.
 - `jiwy_calibration.*`: converts encoder counts to radians and owns measured travel spans, software home offsets, travel limits, and target clamps.
 - `twentysim_controller.*`: initializes and steps the generated yaw/pitch 20-sim submodels and converts normalized controller output to PWM commands.
 - `control_loop.*`: time-driven position-control loop for one yaw/pitch target.
-- `vision_tracker.*`: optional GStreamer green-object tracker that publishes yaw/pitch camera error in radians.
+- `vision_tracker.*`: optional Raspberry Pi GStreamer camera thread that publishes yaw/pitch camera error in radians.
 - `homing.*`: sequential yaw/pitch software homing routine.
 - `main.c`: starts SPI, runs homing, then optionally runs scheduled hold calibration with `--hold` or vision tracking with `--track`.
 - `jiwy_config.h`: central non-PID configuration for SPI, homing, control-loop, vision, and travel defaults.
@@ -136,34 +136,32 @@ v4l2src -> image/jpeg caps -> jpegdec -> videoconvert -> videoscale -> RGB -> ap
 ```
 
 The tracker scans RGB pixels into a green mask, finds connected green blobs,
-rejects small or thin blobs, and tracks the selected blob center with a short
-exponential smoother. This keeps stray green lights or reflections from pulling
-the target away from the ball. The filtered blob center is then converted to
-camera error using a fixed 60 degree field of view. The units are pixels until
-the final multiply by radians:
+rejects small or thin blobs, and uses the center of the largest valid blob as
+the ball target. A short exponential smoother is applied after selection. The
+filtered blob center is then converted to camera error using the configured
+horizontal and vertical camera field of view:
 
 ```c
-yaw_error_rad =
-    ((object_x - center_x) / center_x) * (camera_fov_rad / 2.0);
-
-pitch_error_rad =
-    ((center_y - object_y) / center_y) * (camera_fov_rad / 2.0);
+yaw_error_rad = atan(normalized_x * tan(horizontal_fov_rad / 2.0));
+pitch_error_rad = atan(normalized_y * tan(vertical_fov_rad / 2.0));
 ```
 
-`camera_fov_rad / 2.0` is used because 60 degrees is the full image width or
-height: the image center is 0 degrees, and each edge is 30 degrees from the
-centerline. Positive yaw means the object is right of center. Positive pitch
-means the object is above center.
+Positive yaw means the object is right of center. Positive pitch means the
+object is above center. Errors inside the configured deadband are reported as
+zero to stop small center-position corrections.
 
-The configured control loop reads the latest camera result each sample. If the ball is
-detected, the setpoint is:
+The configured control loop reads the latest camera result each sample. When a
+new valid camera frame arrives, the setpoint is:
 
 ```text
 target = current encoder angle + camera error
 ```
 
-If no ball is detected, the setpoint is the current encoder angle, so the robot
-stops chasing stale camera data.
+That absolute target is reused until the next camera frame. If no ball is
+detected, the setpoint is the current encoder angle, so the robot stops chasing
+stale camera data. The same hold-current behavior is used if the latest valid
+camera frame is not refreshed for
+`JIWY_VISION_MAX_STALE_CONTROL_SAMPLES` control samples.
 
 # PID CSV logging
 
@@ -183,8 +181,11 @@ The same CSV logging is available while tracking:
 Status logging, camera diagnostics, and vision streaming are configured through
 `jiwy_config.h`.
 
-The stream binds to `127.0.0.1:8080` on the Raspberry Pi. From your PC, open a
-second terminal and forward that port:
+The stream binds to `127.0.0.1:8080` on the Raspberry Pi and shows one
+annotated raw camera frame: detection status, selected-blob circle, centroid
+crosshair, image-center marker, yaw/pitch error, blob/green pixels, processing
+time, and frame interval. From your PC, open a second terminal and forward that
+port:
 
 ```bash
 ssh -L 8080:127.0.0.1:8080 esl@esl.local
