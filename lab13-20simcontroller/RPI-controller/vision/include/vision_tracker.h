@@ -17,7 +17,7 @@ typedef struct _GstElement GstElement;
  * angular error between the camera centerline and the green object centroid.
  */
 
-typedef struct {
+typedef struct VisionTargetSnapshot {
     /** Non-zero when the current frame contains enough green pixels. */
     int valid;
     /** Positive when the green object is right of image center. */
@@ -34,29 +34,18 @@ typedef struct {
     int late_frame;
 } VisionTargetSnapshot;
 
+#include "vision_stream.h"
+
 typedef struct {
     pthread_t thread;
-    pthread_t stream_thread;
     pthread_mutex_t lock;
     pthread_mutex_t state_lock;
-    pthread_mutex_t stream_lock;
     pthread_cond_t state_cond;
-    pthread_cond_t stream_cond;
     VisionTargetSnapshot latest;
     GMainLoop *loop;
     GstElement *pipeline;
     const char *camera_device;
-    uint8_t *stream_frame;
-    size_t stream_frame_size;
-    uint64_t stream_frame_sequence;
-    int stream_frame_width;
-    int stream_frame_height;
-    int stream_enabled;
-    int stream_port;
-    int stream_running;
-    int stream_thread_started;
-    int stream_listen_fd;
-    int stream_client_fd;
+    VisionStream stream;
     int debug_enabled;
     int running;
     int thread_started;

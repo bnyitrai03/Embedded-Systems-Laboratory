@@ -9,7 +9,10 @@ See `ARCHITECTURE.md` for the control/data-flow explanation.
 - `jiwy_calibration.*`: converts encoder counts to radians and owns measured travel spans, software home offsets, travel limits, and target clamps.
 - `twentysim_controller.*`: initializes and steps the generated yaw/pitch 20-sim submodels and converts normalized controller output to PWM commands.
 - `control_loop.*`: time-driven position-control loop for one yaw/pitch target.
-- `vision_tracker.*`: optional Raspberry Pi GStreamer camera thread that publishes yaw/pitch camera error in radians.
+- `vision_blob.*`: green thresholding, largest-blob selection, centroid calculation, and smoothing.
+- `vision_geometry.*`: centroid pixel position to yaw/pitch camera error in radians.
+- `vision_stream.*`: low-rate HTTP debug stream and annotated-frame rendering.
+- `vision_tracker.*`: optional Raspberry Pi GStreamer camera thread and snapshot publishing.
 - `homing.*`: sequential yaw/pitch software homing routine.
 - `main.c`: starts SPI, runs homing, then optionally runs scheduled hold calibration with `--hold` or vision tracking with `--track`.
 - `jiwy_config.h`: central non-PID configuration for SPI, homing, control-loop, vision, and travel defaults.
@@ -62,6 +65,23 @@ Run homing and then track a green object with the camera:
 
 ```sh
 ./jiwy_controller --track
+```
+
+Build the minimal vision smoke runner. It uses the same vision blob, geometry,
+and tracker code as the robot path, but swaps only the camera source for macOS:
+
+```sh
+make mac-smoke
+./vision/test/vision_tracker_smoke
+```
+
+The smoke runner prints the latest yaw/pitch snapshot once per second and, by
+default, serves the same annotated frame at `http://127.0.0.1:8080/`. On the
+Raspberry Pi, build the same runner against the normal V4L2 camera path:
+
+```sh
+make vision-smoke
+./vision/test/vision_tracker_smoke
 ```
 
 Build the standalone SPI smoke test:
@@ -135,11 +155,11 @@ through GStreamer:
 v4l2src -> image/jpeg caps -> jpegdec -> videoconvert -> videoscale -> RGB -> appsink
 ```
 
-The tracker scans RGB pixels into a green mask, finds connected green blobs,
+`vision_blob.c` scans RGB pixels into a green mask, finds connected green blobs,
 rejects small or thin blobs, and uses the center of the largest valid blob as
-the ball target. A short exponential smoother is applied after selection. The
-filtered blob center is then converted to camera error using the configured
-horizontal and vertical camera field of view:
+the ball target. A short exponential smoother is applied after selection.
+`vision_geometry.c` converts the filtered blob center to camera error using the
+configured horizontal and vertical camera field of view:
 
 ```c
 yaw_error_rad = atan(normalized_x * tan(horizontal_fov_rad / 2.0));

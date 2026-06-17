@@ -118,7 +118,7 @@
  * Publish only every Nth camera frame to the browser debug stream. With a
  * 30 fps camera, 6 gives about 5 fps and keeps HTTP debug work cheap.
  */
-#define JIWY_VISION_STREAM_FPS_DIVISOR 6
+#define JIWY_VISION_STREAM_FPS_DIVISOR 1
 #define JIWY_VISION_DEBUG_EVERY_FRAMES 30
 
 /*

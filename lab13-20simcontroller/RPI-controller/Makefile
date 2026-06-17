@@ -13,11 +13,15 @@ GST_LDLIBS := $(shell pkg-config --libs $(GST_PACKAGES))
 THREAD_FLAGS ?= -pthread
 
 TARGET = jiwy_controller
+VISION_SMOKE_TARGET = vision/test/vision_tracker_smoke
 
 SRCS = \
 	main.c \
 	app/control_loop.c \
 	vision/vision_tracker.c \
+	vision/vision_blob.c \
+	vision/vision_geometry.c \
+	vision/vision_stream.c \
 	comm/control_protocol.c \
 	control/jiwy_calibration.c \
 	control/twentysim_controller.c \
@@ -35,7 +39,7 @@ SRCS = \
 OBJS = $(SRCS:.c=.o)
 DEPS = $(OBJS:.o=.d)
 
-.PHONY: all clean smoke-test
+.PHONY: all clean smoke-test vision-smoke mac-smoke
 
 all: $(TARGET)
 
@@ -48,7 +52,25 @@ $(TARGET): $(OBJS)
 smoke-test:
 	$(CC) $(CFLAGS) -o test/spi_motor_smoke_test test/spi_motor_smoke_test.c
 
+vision-smoke:
+	$(CC) $(CPPFLAGS) $(GST_CFLAGS) $(CFLAGS) $(THREAD_FLAGS) \
+		-o $(VISION_SMOKE_TARGET) \
+		vision/test/vision_tracker_smoke.c \
+		vision/vision_tracker.c vision/vision_blob.c \
+		vision/vision_geometry.c vision/vision_stream.c \
+		$(LDLIBS) $(GST_LDLIBS) $(THREAD_FLAGS)
+
+mac-smoke:
+	$(CC) $(CPPFLAGS) $(GST_CFLAGS) $(CFLAGS) $(THREAD_FLAGS) \
+		-DJIWY_VISION_USE_AVFVIDEOSRC \
+		-o $(VISION_SMOKE_TARGET) \
+		vision/test/vision_tracker_smoke.c \
+		vision/vision_tracker.c vision/vision_blob.c \
+		vision/vision_geometry.c vision/vision_stream.c \
+		$(LDLIBS) $(GST_LDLIBS) $(THREAD_FLAGS)
+
 clean:
-	rm -f $(TARGET) $(OBJS) $(DEPS) test/spi_motor_smoke_test
+	rm -f $(TARGET) $(OBJS) $(DEPS) test/spi_motor_smoke_test \
+		$(VISION_SMOKE_TARGET)
 
 -include $(DEPS)

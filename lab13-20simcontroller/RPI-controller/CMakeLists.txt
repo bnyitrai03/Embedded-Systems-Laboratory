@@ -20,6 +20,9 @@ if(JIWY_BUILD_CONTROLLER)
         main.c
         app/control_loop.c
         vision/vision_tracker.c
+        vision/vision_blob.c
+        vision/vision_geometry.c
+        vision/vision_stream.c
         comm/control_protocol.c
         control/jiwy_calibration.c
         control/twentysim_controller.c

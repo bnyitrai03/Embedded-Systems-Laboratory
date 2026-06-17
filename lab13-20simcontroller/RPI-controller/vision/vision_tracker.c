@@ -2,45 +2,23 @@
 
 #include <errno.h>
 #include <limits.h>
-#include <math.h>
-#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
 
 #include <gst/app/gstappsink.h>
 #include <gst/video/video.h>
 #include "jiwy_config.h"
+#include "vision_blob.h"
+#include "vision_geometry.h"
 
 typedef struct {
     VisionTracker *tracker;
+    VisionBlobTracker blob_tracker;
     uint64_t frame_count;
     struct timespec last_frame_time;
     int have_last_frame_time;
-    guint8 *green_mask;
-    int *component_queue;
-    size_t detection_capacity;
-    double filtered_object_x;
-    double filtered_object_y;
-    int have_filtered_object;
-    unsigned lost_frames;
 } VisionPipelineData;
-
-typedef struct {
-    int valid;
-    uint64_t total_green_pixels;
-    uint64_t blob_pixels;
-    int min_x;
-    int min_y;
-    int max_x;
-    int max_y;
-    double raw_object_x;
-    double raw_object_y;
-    double object_x;
-    double object_y;
-} VisionBlobDetection;
 
 static long timespec_diff_us(struct timespec end, struct timespec start)
 {
@@ -48,817 +26,6 @@ static long timespec_diff_us(struct timespec end, struct timespec start)
     long nsec = end.tv_nsec - start.tv_nsec;
 
     return (long)sec * 1000000L + nsec / 1000L;
-}
-
-static gboolean is_green_pixel(guint8 r, guint8 g, guint8 b)
-{
-    guint8 max_value = MAX(r, MAX(g, b));
-    guint8 min_value = MIN(r, MIN(g, b));
-    int delta = max_value - min_value;
-    int hue;
-    int whiteness_percent;
-    int blackness_percent;
-
-    if (max_value < JIWY_VISION_GREEN_MIN_CHANNEL ||
-        delta < JIWY_VISION_GREEN_MIN_DELTA ||
-        g != max_value) {
-        return FALSE;
-    }
-
-    hue = 120 + (60 * ((int)b - (int)r)) / delta;
-    whiteness_percent = ((int)min_value * 100) / 255;
-    blackness_percent = ((255 - (int)max_value) * 100) / 255;
-
-    return hue >= HUE_LOWER_LIMIT &&
-           hue <= HUE_UPPER_LIMIT &&
-           whiteness_percent >= JIWY_VISION_GREEN_MIN_WHITENESS_PERCENT &&
-           whiteness_percent <= JIWY_VISION_GREEN_MAX_WHITENESS_PERCENT &&
-           blackness_percent >= JIWY_VISION_GREEN_MIN_BLACKNESS_PERCENT &&
-           blackness_percent <= JIWY_VISION_GREEN_MAX_BLACKNESS_PERCENT;
-}
-
-static int ensure_detection_buffers(VisionPipelineData *data,
-                                    size_t pixel_count)
-{
-    guint8 *new_mask;
-    int *new_queue;
-
-    if (pixel_count > (size_t)INT_MAX) {
-        return -EOVERFLOW;
-    }
-    if (data->detection_capacity >= pixel_count) {
-        return 0;
-    }
-
-    new_mask = (guint8 *)malloc(pixel_count);
-    new_queue = (int *)malloc(pixel_count * sizeof(*new_queue));
-    if (new_mask == NULL || new_queue == NULL) {
-        free(new_mask);
-        free(new_queue);
-        return -ENOMEM;
-    }
-
-    free(data->green_mask);
-    free(data->component_queue);
-    data->green_mask = new_mask;
-    data->component_queue = new_queue;
-    data->detection_capacity = pixel_count;
-
-    return 0;
-}
-
-static gboolean blob_shape_is_valid(uint64_t pixels,
-                                    int min_x,
-                                    int min_y,
-                                    int max_x,
-                                    int max_y)
-{
-    int width = max_x - min_x + 1;
-    int height = max_y - min_y + 1;
-    int min_side = MIN(width, height);
-    int max_side = MAX(width, height);
-    uint64_t box_area = (uint64_t)width * (uint64_t)height;
-
-    if (pixels < JIWY_VISION_MIN_GREEN_PIXELS ||
-        width < JIWY_VISION_BLOB_MIN_WIDTH ||
-        height < JIWY_VISION_BLOB_MIN_HEIGHT ||
-        min_side <= 0) {
-        return FALSE;
-    }
-
-    if (max_side * 100 > min_side * JIWY_VISION_BLOB_MAX_ASPECT_PERCENT) {
-        return FALSE;
-    }
-
-    return pixels * 100 >=
-        box_area * (uint64_t)JIWY_VISION_BLOB_MIN_FILL_PERCENT;
-}
-
-static void find_green_blob(VisionPipelineData *data,
-                            const guint8 *rgb,
-                            int width,
-                            int height,
-                            int stride,
-                            VisionBlobDetection *detection)
-{
-    gboolean tracking_locked =
-        data->have_filtered_object &&
-        data->lost_frames < JIWY_VISION_TRACK_RESET_LOST_FRAMES;
-    double best_score = -HUGE_VAL;
-
-    memset(detection, 0, sizeof(*detection));
-
-    for (int y = 0; y < height; ++y) {
-        const guint8 *row = rgb + y * stride;
-        size_t row_offset = (size_t)y * (size_t)width;
-
-        for (int x = 0; x < width; ++x) {
-            const guint8 *pixel = row + x * 3;
-            size_t index = row_offset + (size_t)x;
-
-            if (is_green_pixel(pixel[0], pixel[1], pixel[2])) {
-                data->green_mask[index] = 1;
-                ++detection->total_green_pixels;
-            } else {
-                data->green_mask[index] = 0;
-            }
-        }
-    }
-
-    for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-            int start_index = y * width + x;
-            int head = 0;
-            int tail = 0;
-            uint64_t pixels = 0;
-            uint64_t sum_x = 0;
-            uint64_t sum_y = 0;
-            int min_x = width;
-            int min_y = height;
-            int max_x = 0;
-            int max_y = 0;
-            double object_x;
-            double object_y;
-            double score;
-
-            if (data->green_mask[start_index] == 0) {
-                continue;
-            }
-
-            data->green_mask[start_index] = 0;
-            data->component_queue[tail++] = start_index;
-
-            while (head < tail) {
-                int pixel_index = data->component_queue[head++];
-                int pixel_x = pixel_index % width;
-                int pixel_y = pixel_index / width;
-
-                ++pixels;
-                sum_x += (uint64_t)pixel_x;
-                sum_y += (uint64_t)pixel_y;
-                min_x = MIN(min_x, pixel_x);
-                min_y = MIN(min_y, pixel_y);
-                max_x = MAX(max_x, pixel_x);
-                max_y = MAX(max_y, pixel_y);
-
-                if (pixel_x > 0 &&
-                    data->green_mask[pixel_index - 1] != 0) {
-                    data->green_mask[pixel_index - 1] = 0;
-                    data->component_queue[tail++] = pixel_index - 1;
-                }
-                if (pixel_x + 1 < width &&
-                    data->green_mask[pixel_index + 1] != 0) {
-                    data->green_mask[pixel_index + 1] = 0;
-                    data->component_queue[tail++] = pixel_index + 1;
-                }
-                if (pixel_y > 0 &&
-                    data->green_mask[pixel_index - width] != 0) {
-                    data->green_mask[pixel_index - width] = 0;
-                    data->component_queue[tail++] = pixel_index - width;
-                }
-                if (pixel_y + 1 < height &&
-                    data->green_mask[pixel_index + width] != 0) {
-                    data->green_mask[pixel_index + width] = 0;
-                    data->component_queue[tail++] = pixel_index + width;
-                }
-            }
-
-            if (!blob_shape_is_valid(pixels, min_x, min_y, max_x, max_y)) {
-                continue;
-            }
-
-            object_x = (double)sum_x / (double)pixels;
-            object_y = (double)sum_y / (double)pixels;
-            score = (double)pixels;
-
-            if (tracking_locked) {
-                double dx = object_x - data->filtered_object_x;
-                double dy = object_y - data->filtered_object_y;
-                double distance = sqrt(dx * dx + dy * dy);
-
-                if (distance > JIWY_VISION_TRACK_MAX_JUMP_PIXELS) {
-                    continue;
-                }
-
-                score -= distance * distance * 0.25;
-            }
-
-            if (!detection->valid || score > best_score) {
-                detection->valid = 1;
-                detection->blob_pixels = pixels;
-                detection->min_x = min_x;
-                detection->min_y = min_y;
-                detection->max_x = max_x;
-                detection->max_y = max_y;
-                detection->raw_object_x = object_x;
-                detection->raw_object_y = object_y;
-                detection->object_x = object_x;
-                detection->object_y = object_y;
-                best_score = score;
-            }
-        }
-    }
-}
-
-static void smooth_blob_detection(VisionPipelineData *data,
-                                  VisionBlobDetection *detection)
-{
-    double alpha = JIWY_VISION_TRACK_SMOOTHING_ALPHA;
-
-    if (!detection->valid) {
-        ++data->lost_frames;
-        if (data->lost_frames >= JIWY_VISION_TRACK_RESET_LOST_FRAMES) {
-            data->have_filtered_object = 0;
-        }
-        return;
-    }
-
-    if (alpha < 0.0) {
-        alpha = 0.0;
-    } else if (alpha > 1.0) {
-        alpha = 1.0;
-    }
-
-    if (!data->have_filtered_object) {
-        data->filtered_object_x = detection->object_x;
-        data->filtered_object_y = detection->object_y;
-        data->have_filtered_object = 1;
-    } else {
-        data->filtered_object_x +=
-            alpha * (detection->object_x - data->filtered_object_x);
-        data->filtered_object_y +=
-            alpha * (detection->object_y - data->filtered_object_y);
-    }
-
-    detection->object_x = data->filtered_object_x;
-    detection->object_y = data->filtered_object_y;
-    data->lost_frames = 0;
-}
-
-static void pixel_to_camera_error(double object_x,
-                                  double object_y,
-                                  int width,
-                                  int height,
-                                  double *yaw_error_rad,
-                                  double *pitch_error_rad)
-{
-    double center_x = (double)width / 2.0;
-    double center_y = (double)height / 2.0;
-    double normalized_x = (object_x - center_x) / center_x;
-    double normalized_y = (center_y - object_y) / center_y;
-    double yaw = atan(normalized_x * tan(JIWY_VISION_HORIZONTAL_FOV_RAD / 2.0));
-    double pitch = atan(normalized_y * tan(JIWY_VISION_VERTICAL_FOV_RAD / 2.0));
-
-    if (fabs(yaw) < JIWY_VISION_YAW_DEADBAND_RAD) {
-        yaw = 0.0;
-    }
-    if (fabs(pitch) < JIWY_VISION_PITCH_DEADBAND_RAD) {
-        pitch = 0.0;
-    }
-
-    *yaw_error_rad = yaw;
-    *pitch_error_rad = pitch;
-}
-
-static void write_le16(guint8 *out, uint16_t value)
-{
-    out[0] = (guint8)(value & 0xFFu);
-    out[1] = (guint8)((value >> 8) & 0xFFu);
-}
-
-static void write_le32(guint8 *out, uint32_t value)
-{
-    out[0] = (guint8)(value & 0xFFu);
-    out[1] = (guint8)((value >> 8) & 0xFFu);
-    out[2] = (guint8)((value >> 16) & 0xFFu);
-    out[3] = (guint8)((value >> 24) & 0xFFu);
-}
-
-static int send_all(int fd, const void *buffer, size_t size)
-{
-    const guint8 *bytes = (const guint8 *)buffer;
-#ifdef MSG_NOSIGNAL
-    const int send_flags = MSG_NOSIGNAL;
-#else
-    const int send_flags = 0;
-#endif
-
-    while (size > 0) {
-        ssize_t sent = send(fd, bytes, size, send_flags);
-
-        if (sent < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-            return -errno;
-        }
-        if (sent == 0) {
-            return -EPIPE;
-        }
-
-        bytes += sent;
-        size -= (size_t)sent;
-    }
-
-    return 0;
-}
-
-static void close_stream_fd(int *fd)
-{
-    if (*fd >= 0) {
-        shutdown(*fd, SHUT_RDWR);
-        close(*fd);
-        *fd = -1;
-    }
-}
-
-static void set_rgb(guint8 *rgb,
-                    int width,
-                    int height,
-                    int stride,
-                    int x,
-                    int y,
-                    guint8 r,
-                    guint8 g,
-                    guint8 b)
-{
-    guint8 *pixel;
-
-    if (x < 0 || x >= width || y < 0 || y >= height) {
-        return;
-    }
-
-    pixel = rgb + y * stride + x * 3;
-    pixel[0] = r;
-    pixel[1] = g;
-    pixel[2] = b;
-}
-
-static void draw_cross(guint8 *rgb,
-                       int width,
-                       int height,
-                       int stride,
-                       int center_x,
-                       int center_y,
-                       int radius,
-                       guint8 r,
-                       guint8 g,
-                       guint8 b)
-{
-    for (int d = -radius; d <= radius; ++d) {
-        set_rgb(rgb, width, height, stride, center_x + d, center_y, r, g, b);
-        set_rgb(rgb, width, height, stride, center_x, center_y + d, r, g, b);
-    }
-}
-
-static void draw_circle(guint8 *rgb,
-                        int width,
-                        int height,
-                        int stride,
-                        int center_x,
-                        int center_y,
-                        int radius,
-                        guint8 r,
-                        guint8 g,
-                        guint8 b)
-{
-    int radius_sq = radius * radius;
-    int thickness = MAX(6, radius / 8);
-
-    if (radius < 2) {
-        return;
-    }
-
-    for (int y = center_y - radius - 1; y <= center_y + radius + 1; ++y) {
-        for (int x = center_x - radius - 1; x <= center_x + radius + 1; ++x) {
-            int dx = x - center_x;
-            int dy = y - center_y;
-            int distance_sq = dx * dx + dy * dy;
-
-            if (abs(distance_sq - radius_sq) <= thickness) {
-                set_rgb(rgb, width, height, stride, x, y, r, g, b);
-            }
-        }
-    }
-}
-
-static guint8 glyph_row(char ch, int row)
-{
-    static const guint8 glyph_space[7] = {0, 0, 0, 0, 0, 0, 0};
-    static const guint8 glyph_dash[7] = {0, 0, 0, 31, 0, 0, 0};
-    static const guint8 glyph_dot[7] = {0, 0, 0, 0, 0, 12, 12};
-    static const guint8 glyph_0[7] = {14, 17, 19, 21, 25, 17, 14};
-    static const guint8 glyph_1[7] = {4, 12, 4, 4, 4, 4, 14};
-    static const guint8 glyph_2[7] = {14, 17, 1, 2, 4, 8, 31};
-    static const guint8 glyph_3[7] = {30, 1, 1, 14, 1, 1, 30};
-    static const guint8 glyph_4[7] = {2, 6, 10, 18, 31, 2, 2};
-    static const guint8 glyph_5[7] = {31, 16, 16, 30, 1, 1, 30};
-    static const guint8 glyph_6[7] = {14, 16, 16, 30, 17, 17, 14};
-    static const guint8 glyph_7[7] = {31, 1, 2, 4, 8, 8, 8};
-    static const guint8 glyph_8[7] = {14, 17, 17, 14, 17, 17, 14};
-    static const guint8 glyph_9[7] = {14, 17, 17, 15, 1, 1, 14};
-    static const guint8 glyph_a[7] = {14, 17, 17, 31, 17, 17, 17};
-    static const guint8 glyph_b[7] = {30, 17, 17, 30, 17, 17, 30};
-    static const guint8 glyph_c[7] = {14, 17, 16, 16, 16, 17, 14};
-    static const guint8 glyph_d[7] = {30, 17, 17, 17, 17, 17, 30};
-    static const guint8 glyph_e[7] = {31, 16, 16, 30, 16, 16, 31};
-    static const guint8 glyph_g[7] = {14, 17, 16, 23, 17, 17, 15};
-    static const guint8 glyph_h[7] = {17, 17, 17, 31, 17, 17, 17};
-    static const guint8 glyph_i[7] = {14, 4, 4, 4, 4, 4, 14};
-    static const guint8 glyph_l[7] = {16, 16, 16, 16, 16, 16, 31};
-    static const guint8 glyph_m[7] = {17, 27, 21, 21, 17, 17, 17};
-    static const guint8 glyph_n[7] = {17, 25, 21, 19, 17, 17, 17};
-    static const guint8 glyph_o[7] = {14, 17, 17, 17, 17, 17, 14};
-    static const guint8 glyph_p[7] = {30, 17, 17, 30, 16, 16, 16};
-    static const guint8 glyph_r[7] = {30, 17, 17, 30, 20, 18, 17};
-    static const guint8 glyph_s[7] = {15, 16, 16, 14, 1, 1, 30};
-    static const guint8 glyph_t[7] = {31, 4, 4, 4, 4, 4, 4};
-    static const guint8 glyph_u[7] = {17, 17, 17, 17, 17, 17, 14};
-    static const guint8 glyph_w[7] = {17, 17, 17, 21, 21, 21, 10};
-    static const guint8 glyph_y[7] = {17, 17, 10, 4, 4, 4, 4};
-    const guint8 *glyph = glyph_space;
-
-    switch (ch) {
-    case '-': glyph = glyph_dash; break;
-    case '.': glyph = glyph_dot; break;
-    case '0': glyph = glyph_0; break;
-    case '1': glyph = glyph_1; break;
-    case '2': glyph = glyph_2; break;
-    case '3': glyph = glyph_3; break;
-    case '4': glyph = glyph_4; break;
-    case '5': glyph = glyph_5; break;
-    case '6': glyph = glyph_6; break;
-    case '7': glyph = glyph_7; break;
-    case '8': glyph = glyph_8; break;
-    case '9': glyph = glyph_9; break;
-    case 'A': glyph = glyph_a; break;
-    case 'B': glyph = glyph_b; break;
-    case 'C': glyph = glyph_c; break;
-    case 'D': glyph = glyph_d; break;
-    case 'E': glyph = glyph_e; break;
-    case 'G': glyph = glyph_g; break;
-    case 'H': glyph = glyph_h; break;
-    case 'I': glyph = glyph_i; break;
-    case 'L': glyph = glyph_l; break;
-    case 'M': glyph = glyph_m; break;
-    case 'N': glyph = glyph_n; break;
-    case 'O': glyph = glyph_o; break;
-    case 'P': glyph = glyph_p; break;
-    case 'R': glyph = glyph_r; break;
-    case 'S': glyph = glyph_s; break;
-    case 'T': glyph = glyph_t; break;
-    case 'U': glyph = glyph_u; break;
-    case 'W': glyph = glyph_w; break;
-    case 'Y': glyph = glyph_y; break;
-    default: break;
-    }
-
-    return glyph[row];
-}
-
-static void draw_text(guint8 *rgb,
-                      int width,
-                      int height,
-                      int stride,
-                      int x,
-                      int y,
-                      const char *text,
-                      guint8 r,
-                      guint8 g,
-                      guint8 b)
-{
-    const int scale = 2;
-    int cursor_x = x;
-
-    for (const char *p = text; *p != '\0'; ++p) {
-        for (int row = 0; row < 7; ++row) {
-            guint8 bits = glyph_row(*p, row);
-            for (int col = 0; col < 5; ++col) {
-                if ((bits & (guint8)(1u << (4 - col))) == 0) {
-                    continue;
-                }
-                for (int sy = 0; sy < scale; ++sy) {
-                    for (int sx = 0; sx < scale; ++sx) {
-                        set_rgb(rgb,
-                                width,
-                                height,
-                                stride,
-                                cursor_x + col * scale + sx,
-                                y + row * scale + sy,
-                                r,
-                                g,
-                                b);
-                    }
-                }
-            }
-        }
-        cursor_x += 6 * scale;
-    }
-}
-
-static void annotate_stream_frame(guint8 *annotated,
-                                  const guint8 *rgb,
-                                  int width,
-                                  int height,
-                                  int stride,
-                                  const VisionBlobDetection *detection,
-                                  const VisionTargetSnapshot *snapshot)
-{
-    char line[96];
-
-    for (int y = 0; y < height; ++y) {
-        memcpy(annotated + y * width * 3,
-               rgb + y * stride,
-               (size_t)width * 3u);
-    }
-
-    draw_cross(annotated,
-               width,
-               height,
-               width * 3,
-               width / 2,
-               height / 2,
-               9,
-               60,
-               160,
-               255);
-
-    if (snapshot->valid && detection->valid) {
-        int center_x = (detection->min_x + detection->max_x) / 2;
-        int center_y = (detection->min_y + detection->max_y) / 2;
-        int blob_width = detection->max_x - detection->min_x + 1;
-        int blob_height = detection->max_y - detection->min_y + 1;
-        int radius = MAX(blob_width, blob_height) / 2 + 4;
-
-        draw_circle(annotated,
-                    width,
-                    height,
-                    width * 3,
-                    center_x,
-                    center_y,
-                    radius,
-                    255,
-                    220,
-                    40);
-        draw_cross(annotated,
-                   width,
-                   height,
-                   width * 3,
-                   (int)(detection->object_x + 0.5),
-                   (int)(detection->object_y + 0.5),
-                   8,
-                   255,
-                   255,
-                   255);
-    }
-
-    draw_text(annotated,
-              width,
-              height,
-              width * 3,
-              8,
-              8,
-              snapshot->valid ? "DETECTED" : "NO TARGET",
-              snapshot->valid ? 40 : 255,
-              snapshot->valid ? 255 : 60,
-              snapshot->valid ? 80 : 60);
-
-    snprintf(line,
-             sizeof(line),
-             "YAW %.3f PITCH %.3f",
-             snapshot->yaw_error_rad,
-             snapshot->pitch_error_rad);
-    draw_text(annotated, width, height, width * 3, 8, 28, line, 255, 255, 255);
-
-    snprintf(line,
-             sizeof(line),
-             "BLOB %llu GREEN %llu",
-             (unsigned long long)detection->blob_pixels,
-             (unsigned long long)detection->total_green_pixels);
-    draw_text(annotated, width, height, width * 3, 8, 48, line, 255, 255, 255);
-
-    snprintf(line,
-             sizeof(line),
-             "PROC %.0fUS DT %.1fMS",
-             snapshot->process_us,
-             snapshot->frame_interval_ms);
-    draw_text(annotated, width, height, width * 3, 8, 68, line, 255, 255, 255);
-}
-
-static void publish_stream_frame(VisionTracker *tracker,
-                                 const guint8 *rgb,
-                                 int width,
-                                 int height,
-                                 int stride,
-                                 const VisionBlobDetection *detection,
-                                 const VisionTargetSnapshot *snapshot)
-{
-    guint row_size = (guint)(((width * 3) + 3) & ~3);
-    gsize pixel_data_size = (gsize)row_size * (gsize)height;
-    gsize frame_size = JIWY_VISION_BMP_HEADER_SIZE + pixel_data_size;
-    guint8 *annotated;
-    guint8 *frame;
-
-    if (!tracker->stream_enabled || !tracker->stream_running) {
-        return;
-    }
-
-    annotated = (guint8 *)malloc((gsize)width * (gsize)height * 3u);
-    if (annotated == NULL) {
-        return;
-    }
-
-    frame = (guint8 *)malloc(frame_size);
-    if (frame == NULL) {
-        free(annotated);
-        return;
-    }
-
-    annotate_stream_frame(annotated,
-                          rgb,
-                          width,
-                          height,
-                          stride,
-                          detection,
-                          snapshot);
-
-    memset(frame, 0, frame_size);
-    frame[0] = 'B';
-    frame[1] = 'M';
-    write_le32(frame + 2, (uint32_t)frame_size);
-    write_le32(frame + 10, JIWY_VISION_BMP_HEADER_SIZE);
-    write_le32(frame + 14, 40);
-    write_le32(frame + 18, (uint32_t)width);
-    write_le32(frame + 22, (uint32_t)height);
-    write_le16(frame + 26, 1);
-    write_le16(frame + 28, 24);
-    write_le32(frame + 34, (uint32_t)pixel_data_size);
-
-    for (int y = 0; y < height; ++y) {
-        const guint8 *src = annotated + y * width * 3;
-        guint8 *dst = frame + JIWY_VISION_BMP_HEADER_SIZE +
-            (gsize)(height - 1 - y) * row_size;
-
-        for (int x = 0; x < width; ++x) {
-            dst[x * 3 + 0] = src[x * 3 + 2];
-            dst[x * 3 + 1] = src[x * 3 + 1];
-            dst[x * 3 + 2] = src[x * 3 + 0];
-        }
-    }
-
-    pthread_mutex_lock(&tracker->stream_lock);
-    free(tracker->stream_frame);
-    tracker->stream_frame = frame;
-    tracker->stream_frame_size = frame_size;
-    tracker->stream_frame_width = width;
-    tracker->stream_frame_height = height;
-    ++tracker->stream_frame_sequence;
-    pthread_cond_broadcast(&tracker->stream_cond);
-    pthread_mutex_unlock(&tracker->stream_lock);
-    free(annotated);
-}
-
-static int send_stream_http_header(int client_fd)
-{
-    const char *header =
-        "HTTP/1.0 200 OK\r\n"
-        "Server: jiwy-vision-stream\r\n"
-        "Cache-Control: no-cache\r\n"
-        "Pragma: no-cache\r\n"
-        "Connection: close\r\n"
-        "Content-Type: multipart/x-mixed-replace; boundary="
-        JIWY_VISION_STREAM_BOUNDARY "\r\n"
-        "\r\n";
-
-    return send_all(client_fd, header, strlen(header));
-}
-
-static int stream_client_loop(VisionTracker *tracker, int client_fd)
-{
-    uint64_t last_sequence = 0;
-    int result = send_stream_http_header(client_fd);
-
-    if (result < 0) {
-        return result;
-    }
-
-    while (tracker->stream_running) {
-        guint8 *frame = NULL;
-        size_t frame_size = 0;
-        char part_header[160];
-        int header_size;
-
-        pthread_mutex_lock(&tracker->stream_lock);
-        while (tracker->stream_running &&
-               tracker->stream_frame_sequence == last_sequence) {
-            pthread_cond_wait(&tracker->stream_cond, &tracker->stream_lock);
-        }
-        if (!tracker->stream_running) {
-            pthread_mutex_unlock(&tracker->stream_lock);
-            break;
-        }
-
-        frame_size = tracker->stream_frame_size;
-        frame = (guint8 *)malloc(frame_size);
-        if (frame != NULL) {
-            memcpy(frame, tracker->stream_frame, frame_size);
-            last_sequence = tracker->stream_frame_sequence;
-        }
-        pthread_mutex_unlock(&tracker->stream_lock);
-
-        if (frame == NULL) {
-            return -ENOMEM;
-        }
-
-        header_size = snprintf(part_header,
-                               sizeof(part_header),
-                               "--" JIWY_VISION_STREAM_BOUNDARY "\r\n"
-                               "Content-Type: image/bmp\r\n"
-                               "Content-Length: %zu\r\n\r\n",
-                               frame_size);
-        if (header_size < 0 || header_size >= (int)sizeof(part_header)) {
-            free(frame);
-            return -EINVAL;
-        }
-
-        result = send_all(client_fd, part_header, (size_t)header_size);
-        if (result == 0) {
-            result = send_all(client_fd, frame, frame_size);
-        }
-        if (result == 0) {
-            result = send_all(client_fd, "\r\n", 2);
-        }
-        free(frame);
-
-        if (result < 0) {
-            return result;
-        }
-    }
-
-    return 0;
-}
-
-static void *vision_stream_thread_main(void *arg)
-{
-    VisionTracker *tracker = (VisionTracker *)arg;
-    int listen_fd;
-    int yes = 1;
-    struct sockaddr_in address;
-
-    listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (listen_fd < 0) {
-        fprintf(stderr, "Vision stream socket failed: %s\n", strerror(errno));
-        return NULL;
-    }
-
-    tracker->stream_listen_fd = listen_fd;
-    setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
-
-    memset(&address, 0, sizeof(address));
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = htonl(0x7F000001u);
-    address.sin_port = htons((uint16_t)tracker->stream_port);
-
-    if (bind(listen_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        fprintf(stderr,
-                "Vision stream bind failed on 127.0.0.1:%d: %s\n",
-                tracker->stream_port,
-                strerror(errno));
-        close_stream_fd(&tracker->stream_listen_fd);
-        return NULL;
-    }
-
-    if (listen(listen_fd, 1) < 0) {
-        fprintf(stderr, "Vision stream listen failed: %s\n", strerror(errno));
-        close_stream_fd(&tracker->stream_listen_fd);
-        return NULL;
-    }
-
-    printf("Vision stream listening on http://127.0.0.1:%d/\n",
-           tracker->stream_port);
-
-    while (tracker->stream_running) {
-        int client_fd = accept(listen_fd, NULL, NULL);
-
-        if (client_fd < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-            if (tracker->stream_running) {
-                fprintf(stderr,
-                        "Vision stream accept failed: %s\n",
-                        strerror(errno));
-            }
-            break;
-        }
-
-        tracker->stream_client_fd = client_fd;
-        (void)stream_client_loop(tracker, client_fd);
-        close_stream_fd(&tracker->stream_client_fd);
-    }
-
-    close_stream_fd(&tracker->stream_listen_fd);
-    return NULL;
 }
 
 static void update_snapshot(VisionTracker *tracker,
@@ -882,7 +49,6 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
     int width;
     int height;
     int stride;
-    size_t pixel_count;
     VisionBlobDetection detection;
     struct timespec frame_start;
     struct timespec frame_end;
@@ -926,7 +92,6 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
         gst_sample_unref(sample);
         return GST_FLOW_ERROR;
     }
-    pixel_count = (size_t)width * (size_t)height;
 
     if (stride <= 0 || !gst_buffer_map(buffer, &map, GST_MAP_READ)) {
         gst_sample_unref(sample);
@@ -941,14 +106,16 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
         return GST_FLOW_ERROR;
     }
 
-    if (ensure_detection_buffers(data, pixel_count) < 0) {
+    if (vision_blob_tracker_process_rgb(&data->blob_tracker,
+                                        map.data,
+                                        width,
+                                        height,
+                                        stride,
+                                        &detection) < 0) {
         gst_buffer_unmap(buffer, &map);
         gst_sample_unref(sample);
         return GST_FLOW_ERROR;
     }
-
-    find_green_blob(data, map.data, width, height, stride, &detection);
-    smooth_blob_detection(data, &detection);
 
     memset(&snapshot, 0, sizeof(snapshot));
     snapshot.frame_count = data->frame_count;
@@ -960,12 +127,12 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
 
     if (detection.valid) {
         snapshot.valid = 1;
-        pixel_to_camera_error(detection.object_x,
-                              detection.object_y,
-                              width,
-                              height,
-                              &snapshot.yaw_error_rad,
-                              &snapshot.pitch_error_rad);
+        vision_pixel_to_camera_error(detection.object_x,
+                                     detection.object_y,
+                                     width,
+                                     height,
+                                     &snapshot.yaw_error_rad,
+                                     &snapshot.pitch_error_rad);
     }
 
     if (clock_gettime(CLOCK_MONOTONIC, &frame_end) < 0) {
@@ -983,15 +150,15 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
 
     update_snapshot(tracker, &snapshot);
 
-    if (tracker->stream_enabled &&
+    if (tracker->stream.enabled &&
         data->frame_count % JIWY_VISION_STREAM_FPS_DIVISOR == 0) {
-        publish_stream_frame(tracker,
-                             map.data,
-                             width,
-                             height,
-                             stride,
-                             &detection,
-                             &snapshot);
+        vision_stream_publish_rgb(&tracker->stream,
+                                  map.data,
+                                  width,
+                                  height,
+                                  stride,
+                                  &detection,
+                                  &snapshot);
     }
 
     if (tracker->debug_enabled &&
@@ -1082,7 +249,9 @@ static void *vision_thread_main(void *arg)
     GstElement *pipeline;
     GstElement *source;
     GstElement *source_capsfilter;
+#ifndef JIWY_VISION_USE_AVFVIDEOSRC
     GstElement *jpegdec;
+#endif
     GstElement *convert;
     GstElement *scale;
     GstElement *rgb_capsfilter;
@@ -1098,19 +267,29 @@ static void *vision_thread_main(void *arg)
 
     memset(&data, 0, sizeof(data));
     data.tracker = tracker;
+    vision_blob_tracker_init(&data.blob_tracker);
 
     pipeline = gst_pipeline_new("jiwy-vision-tracker");
+#ifdef JIWY_VISION_USE_AVFVIDEOSRC
+    source = gst_element_factory_make("avfvideosrc", "source");
+#else
     source = gst_element_factory_make("v4l2src", "source");
+#endif
     source_capsfilter = gst_element_factory_make("capsfilter", "source-caps");
+#ifndef JIWY_VISION_USE_AVFVIDEOSRC
     jpegdec = gst_element_factory_make("jpegdec", "jpeg-decoder");
+#endif
     convert = gst_element_factory_make("videoconvert", "rgb-convert");
     scale = gst_element_factory_make("videoscale", "video-scale");
     rgb_capsfilter = gst_element_factory_make("capsfilter", "rgb-caps");
     sink = gst_element_factory_make("appsink", "sink");
 
     if (pipeline == NULL || source == NULL || source_capsfilter == NULL ||
-        jpegdec == NULL || convert == NULL || scale == NULL ||
-        rgb_capsfilter == NULL || sink == NULL) {
+#ifndef JIWY_VISION_USE_AVFVIDEOSRC
+        jpegdec == NULL ||
+#endif
+        convert == NULL || scale == NULL || rgb_capsfilter == NULL ||
+        sink == NULL) {
         fprintf(stderr, "Vision tracker could not create GStreamer elements\n");
         if (pipeline != NULL) {
             gst_object_unref(pipeline);
@@ -1119,6 +298,24 @@ static void *vision_thread_main(void *arg)
         return NULL;
     }
 
+#ifdef JIWY_VISION_USE_AVFVIDEOSRC
+    if (tracker->camera_device != NULL) {
+        char *end = NULL;
+        long device_index = strtol(tracker->camera_device, &end, 10);
+
+        if (end != tracker->camera_device && *end == '\0' &&
+            device_index >= 0 && device_index <= G_MAXINT) {
+            g_object_set(source, "device-index", (gint)device_index, NULL);
+        }
+    }
+
+    source_caps = gst_caps_new_simple("video/x-raw",
+                                      "width", G_TYPE_INT, JIWY_VISION_FRAME_WIDTH,
+                                      "height", G_TYPE_INT, JIWY_VISION_FRAME_HEIGHT,
+                                      "framerate", GST_TYPE_FRACTION,
+                                      JIWY_VISION_FRAME_RATE, 1,
+                                      NULL);
+#else
     g_object_set(source, "device", tracker->camera_device, NULL);
 
     source_caps = gst_caps_new_simple("image/jpeg",
@@ -1127,6 +324,7 @@ static void *vision_thread_main(void *arg)
                                       "framerate", GST_TYPE_FRACTION,
                                       JIWY_VISION_FRAME_RATE, 1,
                                       NULL);
+#endif
     g_object_set(source_capsfilter, "caps", source_caps, NULL);
     gst_caps_unref(source_caps);
 
@@ -1151,13 +349,30 @@ static void *vision_thread_main(void *arg)
     gst_bin_add_many(GST_BIN(pipeline),
                      source,
                      source_capsfilter,
+#ifndef JIWY_VISION_USE_AVFVIDEOSRC
                      jpegdec,
+#endif
                      convert,
                      scale,
                      rgb_capsfilter,
                      sink,
                      NULL);
 
+#ifdef JIWY_VISION_USE_AVFVIDEOSRC
+    if (!gst_element_link_many(source,
+                               source_capsfilter,
+                               convert,
+                               scale,
+                               rgb_capsfilter,
+                               sink,
+                               NULL)) {
+        fprintf(stderr,
+                "Vision tracker could not link macOS camera pipeline\n");
+        gst_object_unref(pipeline);
+        publish_start_result(tracker, -EINVAL);
+        return NULL;
+    }
+#else
     if (!gst_element_link_many(source,
                                source_capsfilter,
                                jpegdec,
@@ -1172,6 +387,7 @@ static void *vision_thread_main(void *arg)
         publish_start_result(tracker, -EINVAL);
         return NULL;
     }
+#endif
 
     tracker->loop = g_main_loop_new(NULL, FALSE);
     tracker->pipeline = pipeline;
@@ -1217,8 +433,7 @@ static void *vision_thread_main(void *arg)
     tracker->loop = NULL;
     tracker->pipeline = NULL;
     gst_object_unref(pipeline);
-    free(data.green_mask);
-    free(data.component_queue);
+    vision_blob_tracker_destroy(&data.blob_tracker);
 
     return NULL;
 }
@@ -1228,11 +443,8 @@ void vision_tracker_init(VisionTracker *tracker)
     memset(tracker, 0, sizeof(*tracker));
     pthread_mutex_init(&tracker->lock, NULL);
     pthread_mutex_init(&tracker->state_lock, NULL);
-    pthread_mutex_init(&tracker->stream_lock, NULL);
     pthread_cond_init(&tracker->state_cond, NULL);
-    pthread_cond_init(&tracker->stream_cond, NULL);
-    tracker->stream_listen_fd = -1;
-    tracker->stream_client_fd = -1;
+    vision_stream_init(&tracker->stream);
 }
 
 int vision_tracker_start(VisionTracker *tracker,
@@ -1250,24 +462,14 @@ int vision_tracker_start(VisionTracker *tracker,
     tracker->camera_device =
         camera_device != NULL ? camera_device : JIWY_VISION_DEFAULT_CAMERA;
     tracker->debug_enabled = debug_enabled;
-    tracker->stream_enabled = stream_enabled;
-    tracker->stream_port =
-        stream_port > 0 ? stream_port : JIWY_VISION_STREAM_PORT;
     tracker->start_done = 0;
     tracker->start_result = 0;
-    tracker->stream_running = stream_enabled;
-    tracker->stream_thread_started = 0;
 
-    if (tracker->stream_enabled) {
-        result = pthread_create(&tracker->stream_thread,
-                                NULL,
-                                vision_stream_thread_main,
-                                tracker);
-        if (result != 0) {
-            tracker->stream_running = 0;
-            return -result;
-        }
-        tracker->stream_thread_started = 1;
+    result = vision_stream_start(&tracker->stream,
+                                 stream_enabled,
+                                 stream_port);
+    if (result < 0) {
+        return result;
     }
 
     result = pthread_create(&tracker->thread,
@@ -1275,13 +477,7 @@ int vision_tracker_start(VisionTracker *tracker,
                             vision_thread_main,
                             tracker);
     if (result != 0) {
-        tracker->stream_running = 0;
-        pthread_cond_broadcast(&tracker->stream_cond);
-        close_stream_fd(&tracker->stream_listen_fd);
-        if (tracker->stream_thread_started) {
-            pthread_join(tracker->stream_thread, NULL);
-            tracker->stream_thread_started = 0;
-        }
+        vision_stream_stop(&tracker->stream);
         return -result;
     }
     tracker->thread_started = 1;
@@ -1296,14 +492,7 @@ int vision_tracker_start(VisionTracker *tracker,
     if (result < 0) {
         pthread_join(tracker->thread, NULL);
         tracker->thread_started = 0;
-        tracker->stream_running = 0;
-        pthread_cond_broadcast(&tracker->stream_cond);
-        close_stream_fd(&tracker->stream_listen_fd);
-        close_stream_fd(&tracker->stream_client_fd);
-        if (tracker->stream_thread_started) {
-            pthread_join(tracker->stream_thread, NULL);
-            tracker->stream_thread_started = 0;
-        }
+        vision_stream_stop(&tracker->stream);
     } else {
         tracker->running = 1;
     }
@@ -1325,20 +514,7 @@ void vision_tracker_stop(VisionTracker *tracker)
     tracker->thread_started = 0;
     tracker->running = 0;
 
-    tracker->stream_running = 0;
-    pthread_cond_broadcast(&tracker->stream_cond);
-    close_stream_fd(&tracker->stream_listen_fd);
-    close_stream_fd(&tracker->stream_client_fd);
-    if (tracker->stream_thread_started) {
-        pthread_join(tracker->stream_thread, NULL);
-        tracker->stream_thread_started = 0;
-    }
-
-    pthread_mutex_lock(&tracker->stream_lock);
-    free(tracker->stream_frame);
-    tracker->stream_frame = NULL;
-    tracker->stream_frame_size = 0;
-    pthread_mutex_unlock(&tracker->stream_lock);
+    vision_stream_stop(&tracker->stream);
 }
 
 int vision_tracker_read_latest(VisionTracker *tracker,
