@@ -1,0 +1,1821 @@
+[WARNING] DELIVERED AS IS. Understand the commands before running this script.
+[1/7] Synthesizing TopEntity...
+
+ /----------------------------------------------------------------------------\
+ |                                                                            |
+ |  yosys -- Yosys Open SYnthesis Suite                                       |
+ |                                                                            |
+ |  Copyright (C) 2012 - 2020  Claire Xenia Wolf <claire@yosyshq.com>         |
+ |                                                                            |
+ |  Permission to use, copy, modify, and/or distribute this software for any  |
+ |  purpose with or without fee is hereby granted, provided that the above    |
+ |  copyright notice and this permission notice appear in all copies.         |
+ |                                                                            |
+ |  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES  |
+ |  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF          |
+ |  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR   |
+ |  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES    |
+ |  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN     |
+ |  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF   |
+ |  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.            |
+ |                                                                            |
+ \----------------------------------------------------------------------------/
+
+ Yosys 0.33 (git sha1 2584903a060)
+
+
+-- Parsing `TopEntity.v' using frontend ` -vlog2k' --
+
+1. Executing Verilog-2005 frontend: TopEntity.v
+Parsing Verilog input from `TopEntity.v' to AST representation.
+Storing AST representation for module `$abstract\TopEntity'.
+Successfully finished Verilog frontend.
+
+-- Parsing `SPI.v' using frontend ` -vlog2k' --
+
+2. Executing Verilog-2005 frontend: SPI.v
+Parsing Verilog input from `SPI.v' to AST representation.
+Storing AST representation for module `$abstract\SPI'.
+Successfully finished Verilog frontend.
+
+-- Parsing `QuadDecoder.v' using frontend ` -vlog2k' --
+
+3. Executing Verilog-2005 frontend: QuadDecoder.v
+Parsing Verilog input from `QuadDecoder.v' to AST representation.
+Storing AST representation for module `$abstract\QuadDecoder'.
+Successfully finished Verilog frontend.
+
+-- Parsing `PWM.v' using frontend ` -vlog2k' --
+
+4. Executing Verilog-2005 frontend: PWM.v
+Parsing Verilog input from `PWM.v' to AST representation.
+Storing AST representation for module `$abstract\PWM'.
+Successfully finished Verilog frontend.
+
+-- Running command `synth_ice40 -top TopEntity -json ice40.json' --
+
+5. Executing SYNTH_ICE40 pass.
+
+5.1. Executing Verilog-2005 frontend: /usr/bin/../share/yosys/ice40/cells_sim.v
+Parsing Verilog input from `/usr/bin/../share/yosys/ice40/cells_sim.v' to AST representation.
+Generating RTLIL representation for module `\SB_IO'.
+Generating RTLIL representation for module `\SB_GB_IO'.
+Generating RTLIL representation for module `\SB_GB'.
+Generating RTLIL representation for module `\SB_LUT4'.
+Generating RTLIL representation for module `\SB_CARRY'.
+Generating RTLIL representation for module `\SB_DFF'.
+Generating RTLIL representation for module `\SB_DFFE'.
+Generating RTLIL representation for module `\SB_DFFSR'.
+Generating RTLIL representation for module `\SB_DFFR'.
+Generating RTLIL representation for module `\SB_DFFSS'.
+Generating RTLIL representation for module `\SB_DFFS'.
+Generating RTLIL representation for module `\SB_DFFESR'.
+Generating RTLIL representation for module `\SB_DFFER'.
+Generating RTLIL representation for module `\SB_DFFESS'.
+Generating RTLIL representation for module `\SB_DFFES'.
+Generating RTLIL representation for module `\SB_DFFN'.
+Generating RTLIL representation for module `\SB_DFFNE'.
+Generating RTLIL representation for module `\SB_DFFNSR'.
+Generating RTLIL representation for module `\SB_DFFNR'.
+Generating RTLIL representation for module `\SB_DFFNSS'.
+Generating RTLIL representation for module `\SB_DFFNS'.
+Generating RTLIL representation for module `\SB_DFFNESR'.
+Generating RTLIL representation for module `\SB_DFFNER'.
+Generating RTLIL representation for module `\SB_DFFNESS'.
+Generating RTLIL representation for module `\SB_DFFNES'.
+Generating RTLIL representation for module `\SB_RAM40_4K'.
+Generating RTLIL representation for module `\SB_RAM40_4KNR'.
+Generating RTLIL representation for module `\SB_RAM40_4KNW'.
+Generating RTLIL representation for module `\SB_RAM40_4KNRNW'.
+Generating RTLIL representation for module `\ICESTORM_LC'.
+Generating RTLIL representation for module `\SB_PLL40_CORE'.
+Generating RTLIL representation for module `\SB_PLL40_PAD'.
+Generating RTLIL representation for module `\SB_PLL40_2_PAD'.
+Generating RTLIL representation for module `\SB_PLL40_2F_CORE'.
+Generating RTLIL representation for module `\SB_PLL40_2F_PAD'.
+Generating RTLIL representation for module `\SB_WARMBOOT'.
+Generating RTLIL representation for module `\SB_SPRAM256KA'.
+Generating RTLIL representation for module `\SB_HFOSC'.
+Generating RTLIL representation for module `\SB_LFOSC'.
+Generating RTLIL representation for module `\SB_RGBA_DRV'.
+Generating RTLIL representation for module `\SB_LED_DRV_CUR'.
+Generating RTLIL representation for module `\SB_RGB_DRV'.
+Generating RTLIL representation for module `\SB_I2C'.
+Generating RTLIL representation for module `\SB_SPI'.
+Generating RTLIL representation for module `\SB_LEDDA_IP'.
+Generating RTLIL representation for module `\SB_FILTER_50NS'.
+Generating RTLIL representation for module `\SB_IO_I3C'.
+Generating RTLIL representation for module `\SB_IO_OD'.
+Generating RTLIL representation for module `\SB_MAC16'.
+Generating RTLIL representation for module `\ICESTORM_RAM'.
+Successfully finished Verilog frontend.
+
+5.2. Executing HIERARCHY pass (managing design hierarchy).
+
+5.3. Executing AST frontend in derive mode using pre-parsed AST for module `\TopEntity'.
+Generating RTLIL representation for module `\TopEntity'.
+
+5.3.1. Analyzing design hierarchy..
+Top module:  \TopEntity
+
+5.3.2. Executing AST frontend in derive mode using pre-parsed AST for module `\PWM'.
+Generating RTLIL representation for module `\PWM'.
+
+5.3.3. Executing AST frontend in derive mode using pre-parsed AST for module `\QuadDecoder'.
+Generating RTLIL representation for module `\QuadDecoder'.
+
+5.3.4. Executing AST frontend in derive mode using pre-parsed AST for module `\SPI'.
+Generating RTLIL representation for module `\SPI'.
+
+5.3.5. Analyzing design hierarchy..
+Top module:  \TopEntity
+Used module:     \PWM
+Used module:     \QuadDecoder
+Used module:     \SPI
+
+5.3.6. Analyzing design hierarchy..
+Top module:  \TopEntity
+Used module:     \PWM
+Used module:     \QuadDecoder
+Used module:     \SPI
+Removing unused module `$abstract\PWM'.
+Removing unused module `$abstract\QuadDecoder'.
+Removing unused module `$abstract\SPI'.
+Removing unused module `$abstract\TopEntity'.
+Removed 4 unused modules.
+
+5.4. Executing PROC pass (convert processes to netlists).
+
+5.4.1. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Cleaned up 0 empty switches.
+
+5.4.2. Executing PROC_RMDEAD pass (remove dead branches from decision trees).
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1414$241 in module SB_DFFNES.
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1353$234 in module SB_DFFNESS.
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1273$230 in module SB_DFFNER.
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1212$223 in module SB_DFFNESR.
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1138$220 in module SB_DFFNS.
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1088$217 in module SB_DFFNSS.
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1017$214 in module SB_DFFNR.
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:967$211 in module SB_DFFNSR.
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:803$203 in module SB_DFFES.
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:742$196 in module SB_DFFESS.
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:662$192 in module SB_DFFER.
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:601$185 in module SB_DFFESR.
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:527$182 in module SB_DFFS.
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:477$179 in module SB_DFFSS.
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:406$176 in module SB_DFFR.
+Marked 1 switch rules as full_case in process $proc$/usr/bin/../share/yosys/ice40/cells_sim.v:356$173 in module SB_DFFSR.
+Marked 3 switch rules as full_case in process $proc$SPI.v:68$416 in module SPI.
+Marked 6 switch rules as full_case in process $proc$QuadDecoder.v:26$388 in module QuadDecoder.
+Marked 2 switch rules as full_case in process $proc$PWM.v:36$384 in module PWM.
+Marked 2 switch rules as full_case in process $proc$PWM.v:23$381 in module PWM.
+Removed a total of 0 dead cases.
+
+5.4.3. Executing PROC_PRUNE pass (remove redundant assignments in processes).
+Removed 12 redundant assignments.
+Promoted 42 assignments to connections.
+
+5.4.4. Executing PROC_INIT pass (extract init attributes).
+Found init rule in `\SB_DFFNES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$244'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFNESS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$240'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFNER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$233'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFNESR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$229'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFNS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$222'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFNSS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$219'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFNR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$216'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFNSR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$213'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFNE.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$210'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFN.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$208'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$206'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFESS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$202'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$195'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFESR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$191'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$184'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFSS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$181'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$178'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFSR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$175'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFFE.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$172'.
+  Set init value: \Q = 1'0
+Found init rule in `\SB_DFF.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$170'.
+  Set init value: \Q = 1'0
+Found init rule in `\SPI.$proc$SPI.v:66$435'.
+  Set init value: \yaw_pwm_enable_r = 1'0
+Found init rule in `\SPI.$proc$SPI.v:65$434'.
+  Set init value: \yaw_dir_r = 1'0
+Found init rule in `\SPI.$proc$SPI.v:64$433'.
+  Set init value: \yaw_pwm_duty_r = 14'00000000000000
+Found init rule in `\SPI.$proc$SPI.v:62$432'.
+  Set init value: \pitch_pwm_enable_r = 1'0
+Found init rule in `\SPI.$proc$SPI.v:61$431'.
+  Set init value: \pitch_dir_r = 1'0
+Found init rule in `\SPI.$proc$SPI.v:60$430'.
+  Set init value: \pitch_pwm_duty_r = 14'00000000000000
+Found init rule in `\SPI.$proc$SPI.v:58$429'.
+  Set init value: \bit_count = 6'000000
+Found init rule in `\SPI.$proc$SPI.v:57$428'.
+  Set init value: \tx_shift = 0
+Found init rule in `\SPI.$proc$SPI.v:56$427'.
+  Set init value: \rx_shift = 0
+Found init rule in `\SPI.$proc$SPI.v:50$426'.
+  Set init value: \SPI_PICOr = 2'00
+Found init rule in `\SPI.$proc$SPI.v:42$425'.
+  Set init value: \SPI_CSr = 3'111
+Found init rule in `\SPI.$proc$SPI.v:35$424'.
+  Set init value: \SPI_CLKr = 3'000
+Found init rule in `\QuadDecoder.$proc$QuadDecoder.v:17$407'.
+  Set init value: \AB = 2'00
+Found init rule in `\QuadDecoder.$proc$QuadDecoder.v:16$406'.
+  Set init value: \sync = 2'00
+Found init rule in `\QuadDecoder.$proc$QuadDecoder.v:15$405'.
+  Set init value: \state = 2'00
+
+5.4.5. Executing PROC_ARST pass (detect async resets in processes).
+Found async reset \S in `\SB_DFFNES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1414$241'.
+Found async reset \R in `\SB_DFFNER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1273$230'.
+Found async reset \S in `\SB_DFFNS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1138$220'.
+Found async reset \R in `\SB_DFFNR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1017$214'.
+Found async reset \S in `\SB_DFFES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:803$203'.
+Found async reset \R in `\SB_DFFER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:662$192'.
+Found async reset \S in `\SB_DFFS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:527$182'.
+Found async reset \R in `\SB_DFFR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:406$176'.
+Found async reset \rst in `\PWM.$proc$PWM.v:36$384'.
+Found async reset \rst in `\PWM.$proc$PWM.v:23$381'.
+
+5.4.6. Executing PROC_ROM pass (convert switches to ROMs).
+Converted 0 switches.
+<suppressed ~37 debug messages>
+
+5.4.7. Executing PROC_MUX pass (convert decision trees to multiplexers).
+Creating decoders for process `\SB_DFFNES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$244'.
+Creating decoders for process `\SB_DFFNES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1414$241'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFNESS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$240'.
+Creating decoders for process `\SB_DFFNESS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1353$234'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFNER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$233'.
+Creating decoders for process `\SB_DFFNER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1273$230'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFNESR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$229'.
+Creating decoders for process `\SB_DFFNESR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1212$223'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFNS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$222'.
+Creating decoders for process `\SB_DFFNS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1138$220'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFNSS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$219'.
+Creating decoders for process `\SB_DFFNSS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1088$217'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFNR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$216'.
+Creating decoders for process `\SB_DFFNR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1017$214'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFNSR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$213'.
+Creating decoders for process `\SB_DFFNSR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:967$211'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFNE.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$210'.
+Creating decoders for process `\SB_DFFNE.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:922$209'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFN.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$208'.
+Creating decoders for process `\SB_DFFN.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:882$207'.
+Creating decoders for process `\SB_DFFES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$206'.
+Creating decoders for process `\SB_DFFES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:803$203'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFESS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$202'.
+Creating decoders for process `\SB_DFFESS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:742$196'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$195'.
+Creating decoders for process `\SB_DFFER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:662$192'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFESR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$191'.
+Creating decoders for process `\SB_DFFESR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:601$185'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$184'.
+Creating decoders for process `\SB_DFFS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:527$182'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFSS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$181'.
+Creating decoders for process `\SB_DFFSS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:477$179'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$178'.
+Creating decoders for process `\SB_DFFR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:406$176'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFSR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$175'.
+Creating decoders for process `\SB_DFFSR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:356$173'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFFE.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$172'.
+Creating decoders for process `\SB_DFFE.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:311$171'.
+     1/1: $0\Q[0:0]
+Creating decoders for process `\SB_DFF.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$170'.
+Creating decoders for process `\SB_DFF.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:271$169'.
+Creating decoders for process `\SPI.$proc$SPI.v:66$435'.
+Creating decoders for process `\SPI.$proc$SPI.v:65$434'.
+Creating decoders for process `\SPI.$proc$SPI.v:64$433'.
+Creating decoders for process `\SPI.$proc$SPI.v:62$432'.
+Creating decoders for process `\SPI.$proc$SPI.v:61$431'.
+Creating decoders for process `\SPI.$proc$SPI.v:60$430'.
+Creating decoders for process `\SPI.$proc$SPI.v:58$429'.
+Creating decoders for process `\SPI.$proc$SPI.v:57$428'.
+Creating decoders for process `\SPI.$proc$SPI.v:56$427'.
+Creating decoders for process `\SPI.$proc$SPI.v:50$426'.
+Creating decoders for process `\SPI.$proc$SPI.v:42$425'.
+Creating decoders for process `\SPI.$proc$SPI.v:35$424'.
+Creating decoders for process `\SPI.$proc$SPI.v:68$416'.
+     1/9: $0\yaw_pwm_enable_r[0:0]
+     2/9: $0\yaw_dir_r[0:0]
+     3/9: $0\yaw_pwm_duty_r[13:0]
+     4/9: $0\pitch_pwm_enable_r[0:0]
+     5/9: $0\pitch_dir_r[0:0]
+     6/9: $0\pitch_pwm_duty_r[13:0]
+     7/9: $0\bit_count[5:0]
+     8/9: $0\tx_shift[31:0]
+     9/9: $0\rx_shift[31:0]
+Creating decoders for process `\SPI.$proc$SPI.v:51$415'.
+Creating decoders for process `\SPI.$proc$SPI.v:43$411'.
+Creating decoders for process `\SPI.$proc$SPI.v:36$408'.
+Creating decoders for process `\QuadDecoder.$proc$QuadDecoder.v:17$407'.
+Creating decoders for process `\QuadDecoder.$proc$QuadDecoder.v:16$406'.
+Creating decoders for process `\QuadDecoder.$proc$QuadDecoder.v:15$405'.
+Creating decoders for process `\QuadDecoder.$proc$QuadDecoder.v:26$388'.
+     1/2: $0\state[1:0]
+     2/2: $0\count[15:0]
+Creating decoders for process `\QuadDecoder.$proc$QuadDecoder.v:20$387'.
+Creating decoders for process `\PWM.$proc$PWM.v:36$384'.
+     1/3: $0\C[0:0]
+     2/3: $0\INB[0:0]
+     3/3: $0\INA[0:0]
+Creating decoders for process `\PWM.$proc$PWM.v:23$381'.
+     1/1: $0\counter[13:0]
+
+5.4.8. Executing PROC_DLATCH pass (convert process syncs to latches).
+
+5.4.9. Executing PROC_DFF pass (convert process syncs to FFs).
+Creating register for signal `\SB_DFFNES.\Q' using process `\SB_DFFNES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1414$241'.
+  created $adff cell `$procdff$613' with negative edge clock and positive level reset.
+Creating register for signal `\SB_DFFNESS.\Q' using process `\SB_DFFNESS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1353$234'.
+  created $dff cell `$procdff$614' with negative edge clock.
+Creating register for signal `\SB_DFFNER.\Q' using process `\SB_DFFNER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1273$230'.
+  created $adff cell `$procdff$615' with negative edge clock and positive level reset.
+Creating register for signal `\SB_DFFNESR.\Q' using process `\SB_DFFNESR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1212$223'.
+  created $dff cell `$procdff$616' with negative edge clock.
+Creating register for signal `\SB_DFFNS.\Q' using process `\SB_DFFNS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1138$220'.
+  created $adff cell `$procdff$617' with negative edge clock and positive level reset.
+Creating register for signal `\SB_DFFNSS.\Q' using process `\SB_DFFNSS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1088$217'.
+  created $dff cell `$procdff$618' with negative edge clock.
+Creating register for signal `\SB_DFFNR.\Q' using process `\SB_DFFNR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1017$214'.
+  created $adff cell `$procdff$619' with negative edge clock and positive level reset.
+Creating register for signal `\SB_DFFNSR.\Q' using process `\SB_DFFNSR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:967$211'.
+  created $dff cell `$procdff$620' with negative edge clock.
+Creating register for signal `\SB_DFFNE.\Q' using process `\SB_DFFNE.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:922$209'.
+  created $dff cell `$procdff$621' with negative edge clock.
+Creating register for signal `\SB_DFFN.\Q' using process `\SB_DFFN.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:882$207'.
+  created $dff cell `$procdff$622' with negative edge clock.
+Creating register for signal `\SB_DFFES.\Q' using process `\SB_DFFES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:803$203'.
+  created $adff cell `$procdff$623' with positive edge clock and positive level reset.
+Creating register for signal `\SB_DFFESS.\Q' using process `\SB_DFFESS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:742$196'.
+  created $dff cell `$procdff$624' with positive edge clock.
+Creating register for signal `\SB_DFFER.\Q' using process `\SB_DFFER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:662$192'.
+  created $adff cell `$procdff$625' with positive edge clock and positive level reset.
+Creating register for signal `\SB_DFFESR.\Q' using process `\SB_DFFESR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:601$185'.
+  created $dff cell `$procdff$626' with positive edge clock.
+Creating register for signal `\SB_DFFS.\Q' using process `\SB_DFFS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:527$182'.
+  created $adff cell `$procdff$627' with positive edge clock and positive level reset.
+Creating register for signal `\SB_DFFSS.\Q' using process `\SB_DFFSS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:477$179'.
+  created $dff cell `$procdff$628' with positive edge clock.
+Creating register for signal `\SB_DFFR.\Q' using process `\SB_DFFR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:406$176'.
+  created $adff cell `$procdff$629' with positive edge clock and positive level reset.
+Creating register for signal `\SB_DFFSR.\Q' using process `\SB_DFFSR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:356$173'.
+  created $dff cell `$procdff$630' with positive edge clock.
+Creating register for signal `\SB_DFFE.\Q' using process `\SB_DFFE.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:311$171'.
+  created $dff cell `$procdff$631' with positive edge clock.
+Creating register for signal `\SB_DFF.\Q' using process `\SB_DFF.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:271$169'.
+  created $dff cell `$procdff$632' with positive edge clock.
+Creating register for signal `\SPI.\rx_shift' using process `\SPI.$proc$SPI.v:68$416'.
+  created $dff cell `$procdff$633' with positive edge clock.
+Creating register for signal `\SPI.\tx_shift' using process `\SPI.$proc$SPI.v:68$416'.
+  created $dff cell `$procdff$634' with positive edge clock.
+Creating register for signal `\SPI.\bit_count' using process `\SPI.$proc$SPI.v:68$416'.
+  created $dff cell `$procdff$635' with positive edge clock.
+Creating register for signal `\SPI.\pitch_pwm_duty_r' using process `\SPI.$proc$SPI.v:68$416'.
+  created $dff cell `$procdff$636' with positive edge clock.
+Creating register for signal `\SPI.\pitch_dir_r' using process `\SPI.$proc$SPI.v:68$416'.
+  created $dff cell `$procdff$637' with positive edge clock.
+Creating register for signal `\SPI.\pitch_pwm_enable_r' using process `\SPI.$proc$SPI.v:68$416'.
+  created $dff cell `$procdff$638' with positive edge clock.
+Creating register for signal `\SPI.\yaw_pwm_duty_r' using process `\SPI.$proc$SPI.v:68$416'.
+  created $dff cell `$procdff$639' with positive edge clock.
+Creating register for signal `\SPI.\yaw_dir_r' using process `\SPI.$proc$SPI.v:68$416'.
+  created $dff cell `$procdff$640' with positive edge clock.
+Creating register for signal `\SPI.\yaw_pwm_enable_r' using process `\SPI.$proc$SPI.v:68$416'.
+  created $dff cell `$procdff$641' with positive edge clock.
+Creating register for signal `\SPI.\SPI_PICOr' using process `\SPI.$proc$SPI.v:51$415'.
+  created $dff cell `$procdff$642' with positive edge clock.
+Creating register for signal `\SPI.\SPI_CSr' using process `\SPI.$proc$SPI.v:43$411'.
+  created $dff cell `$procdff$643' with positive edge clock.
+Creating register for signal `\SPI.\SPI_CLKr' using process `\SPI.$proc$SPI.v:36$408'.
+  created $dff cell `$procdff$644' with positive edge clock.
+Creating register for signal `\QuadDecoder.\count' using process `\QuadDecoder.$proc$QuadDecoder.v:26$388'.
+  created $dff cell `$procdff$645' with positive edge clock.
+Creating register for signal `\QuadDecoder.\state' using process `\QuadDecoder.$proc$QuadDecoder.v:26$388'.
+  created $dff cell `$procdff$646' with positive edge clock.
+Creating register for signal `\QuadDecoder.\sync' using process `\QuadDecoder.$proc$QuadDecoder.v:20$387'.
+  created $dff cell `$procdff$647' with positive edge clock.
+Creating register for signal `\QuadDecoder.\AB' using process `\QuadDecoder.$proc$QuadDecoder.v:20$387'.
+  created $dff cell `$procdff$648' with positive edge clock.
+Creating register for signal `\PWM.\C' using process `\PWM.$proc$PWM.v:36$384'.
+  created $adff cell `$procdff$649' with positive edge clock and positive level reset.
+Creating register for signal `\PWM.\INA' using process `\PWM.$proc$PWM.v:36$384'.
+  created $adff cell `$procdff$650' with positive edge clock and positive level reset.
+Creating register for signal `\PWM.\INB' using process `\PWM.$proc$PWM.v:36$384'.
+  created $adff cell `$procdff$651' with positive edge clock and positive level reset.
+Creating register for signal `\PWM.\counter' using process `\PWM.$proc$PWM.v:23$381'.
+  created $adff cell `$procdff$652' with positive edge clock and positive level reset.
+
+5.4.10. Executing PROC_MEMWR pass (convert process memory writes to cells).
+
+5.4.11. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Removing empty process `SB_DFFNES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$244'.
+Found and cleaned up 1 empty switch in `\SB_DFFNES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1414$241'.
+Removing empty process `SB_DFFNES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1414$241'.
+Removing empty process `SB_DFFNESS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$240'.
+Found and cleaned up 2 empty switches in `\SB_DFFNESS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1353$234'.
+Removing empty process `SB_DFFNESS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1353$234'.
+Removing empty process `SB_DFFNER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$233'.
+Found and cleaned up 1 empty switch in `\SB_DFFNER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1273$230'.
+Removing empty process `SB_DFFNER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1273$230'.
+Removing empty process `SB_DFFNESR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$229'.
+Found and cleaned up 2 empty switches in `\SB_DFFNESR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1212$223'.
+Removing empty process `SB_DFFNESR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1212$223'.
+Removing empty process `SB_DFFNS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$222'.
+Removing empty process `SB_DFFNS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1138$220'.
+Removing empty process `SB_DFFNSS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$219'.
+Found and cleaned up 1 empty switch in `\SB_DFFNSS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1088$217'.
+Removing empty process `SB_DFFNSS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1088$217'.
+Removing empty process `SB_DFFNR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$216'.
+Removing empty process `SB_DFFNR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:1017$214'.
+Removing empty process `SB_DFFNSR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$213'.
+Found and cleaned up 1 empty switch in `\SB_DFFNSR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:967$211'.
+Removing empty process `SB_DFFNSR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:967$211'.
+Removing empty process `SB_DFFNE.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$210'.
+Found and cleaned up 1 empty switch in `\SB_DFFNE.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:922$209'.
+Removing empty process `SB_DFFNE.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:922$209'.
+Removing empty process `SB_DFFN.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$208'.
+Removing empty process `SB_DFFN.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:882$207'.
+Removing empty process `SB_DFFES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$206'.
+Found and cleaned up 1 empty switch in `\SB_DFFES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:803$203'.
+Removing empty process `SB_DFFES.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:803$203'.
+Removing empty process `SB_DFFESS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$202'.
+Found and cleaned up 2 empty switches in `\SB_DFFESS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:742$196'.
+Removing empty process `SB_DFFESS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:742$196'.
+Removing empty process `SB_DFFER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$195'.
+Found and cleaned up 1 empty switch in `\SB_DFFER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:662$192'.
+Removing empty process `SB_DFFER.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:662$192'.
+Removing empty process `SB_DFFESR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$191'.
+Found and cleaned up 2 empty switches in `\SB_DFFESR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:601$185'.
+Removing empty process `SB_DFFESR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:601$185'.
+Removing empty process `SB_DFFS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$184'.
+Removing empty process `SB_DFFS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:527$182'.
+Removing empty process `SB_DFFSS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$181'.
+Found and cleaned up 1 empty switch in `\SB_DFFSS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:477$179'.
+Removing empty process `SB_DFFSS.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:477$179'.
+Removing empty process `SB_DFFR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$178'.
+Removing empty process `SB_DFFR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:406$176'.
+Removing empty process `SB_DFFSR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$175'.
+Found and cleaned up 1 empty switch in `\SB_DFFSR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:356$173'.
+Removing empty process `SB_DFFSR.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:356$173'.
+Removing empty process `SB_DFFE.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$172'.
+Found and cleaned up 1 empty switch in `\SB_DFFE.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:311$171'.
+Removing empty process `SB_DFFE.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:311$171'.
+Removing empty process `SB_DFF.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:0$170'.
+Removing empty process `SB_DFF.$proc$/usr/bin/../share/yosys/ice40/cells_sim.v:271$169'.
+Removing empty process `SPI.$proc$SPI.v:66$435'.
+Removing empty process `SPI.$proc$SPI.v:65$434'.
+Removing empty process `SPI.$proc$SPI.v:64$433'.
+Removing empty process `SPI.$proc$SPI.v:62$432'.
+Removing empty process `SPI.$proc$SPI.v:61$431'.
+Removing empty process `SPI.$proc$SPI.v:60$430'.
+Removing empty process `SPI.$proc$SPI.v:58$429'.
+Removing empty process `SPI.$proc$SPI.v:57$428'.
+Removing empty process `SPI.$proc$SPI.v:56$427'.
+Removing empty process `SPI.$proc$SPI.v:50$426'.
+Removing empty process `SPI.$proc$SPI.v:42$425'.
+Removing empty process `SPI.$proc$SPI.v:35$424'.
+Found and cleaned up 7 empty switches in `\SPI.$proc$SPI.v:68$416'.
+Removing empty process `SPI.$proc$SPI.v:68$416'.
+Removing empty process `SPI.$proc$SPI.v:51$415'.
+Removing empty process `SPI.$proc$SPI.v:43$411'.
+Removing empty process `SPI.$proc$SPI.v:36$408'.
+Removing empty process `QuadDecoder.$proc$QuadDecoder.v:17$407'.
+Removing empty process `QuadDecoder.$proc$QuadDecoder.v:16$406'.
+Removing empty process `QuadDecoder.$proc$QuadDecoder.v:15$405'.
+Found and cleaned up 10 empty switches in `\QuadDecoder.$proc$QuadDecoder.v:26$388'.
+Removing empty process `QuadDecoder.$proc$QuadDecoder.v:26$388'.
+Removing empty process `QuadDecoder.$proc$QuadDecoder.v:20$387'.
+Found and cleaned up 1 empty switch in `\PWM.$proc$PWM.v:36$384'.
+Removing empty process `PWM.$proc$PWM.v:36$384'.
+Found and cleaned up 1 empty switch in `\PWM.$proc$PWM.v:23$381'.
+Removing empty process `PWM.$proc$PWM.v:23$381'.
+Cleaned up 37 empty switches.
+
+5.4.12. Executing OPT_EXPR pass (perform const folding).
+Optimizing module SPI.
+<suppressed ~1 debug messages>
+Optimizing module QuadDecoder.
+<suppressed ~4 debug messages>
+Optimizing module PWM.
+Optimizing module TopEntity.
+
+5.5. Executing FLATTEN pass (flatten design).
+Deleting now unused module SPI.
+Deleting now unused module QuadDecoder.
+Deleting now unused module PWM.
+<suppressed ~5 debug messages>
+
+5.6. Executing TRIBUF pass.
+
+5.7. Executing DEMINOUT pass (demote inout ports to input or output).
+
+5.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.9. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+Removed 0 unused cells and 121 unused wires.
+<suppressed ~1 debug messages>
+
+5.10. Executing CHECK pass (checking for obvious problems).
+Checking module TopEntity...
+Found and reported 0 problems.
+
+5.11. Executing OPT pass (performing simple optimizations).
+
+5.11.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.11.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+<suppressed ~84 debug messages>
+Removed a total of 28 cells.
+
+5.11.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \TopEntity..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~21 debug messages>
+
+5.11.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \TopEntity.
+Performed a total of 0 changes.
+
+5.11.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+<suppressed ~24 debug messages>
+Removed a total of 8 cells.
+
+5.11.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.11.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+Removed 0 unused cells and 36 unused wires.
+<suppressed ~1 debug messages>
+
+5.11.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.11.9. Rerunning OPT passes. (Maybe there is more to do..)
+
+5.11.10. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \TopEntity..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~21 debug messages>
+
+5.11.11. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \TopEntity.
+    New ctrl vector for $pmux cell $flatten\pitch_decoder.$procmux$550: { $auto$opt_reduce.cc:134:opt_pmux$656 $auto$opt_reduce.cc:134:opt_pmux$654 }
+    New ctrl vector for $pmux cell $flatten\yaw_decoder.$procmux$550: { $auto$opt_reduce.cc:134:opt_pmux$660 $auto$opt_reduce.cc:134:opt_pmux$658 }
+  Optimizing cells in module \TopEntity.
+Performed a total of 2 changes.
+
+5.11.12. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.11.13. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.11.14. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+
+5.11.15. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.11.16. Rerunning OPT passes. (Maybe there is more to do..)
+
+5.11.17. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \TopEntity..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~21 debug messages>
+
+5.11.18. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \TopEntity.
+Performed a total of 0 changes.
+
+5.11.19. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.11.20. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.11.21. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+
+5.11.22. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.11.23. Finished OPT passes. (There is nothing left to do.)
+
+5.12. Executing FSM pass (extract and optimize FSM).
+
+5.12.1. Executing FSM_DETECT pass (finding FSMs in design).
+Not marking TopEntity.pitch_decoder.state as FSM state register:
+    Register has an initialization value.
+Not marking TopEntity.yaw_decoder.state as FSM state register:
+    Register has an initialization value.
+
+5.12.2. Executing FSM_EXTRACT pass (extracting FSM from design).
+
+5.12.3. Executing FSM_OPT pass (simple optimizations of FSMs).
+
+5.12.4. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+
+5.12.5. Executing FSM_OPT pass (simple optimizations of FSMs).
+
+5.12.6. Executing FSM_RECODE pass (re-assigning FSM state encoding).
+
+5.12.7. Executing FSM_INFO pass (dumping all available information on FSM cells).
+
+5.12.8. Executing FSM_MAP pass (mapping FSMs to basic logic).
+
+5.13. Executing OPT pass (performing simple optimizations).
+
+5.13.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.13.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.13.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \TopEntity..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~21 debug messages>
+
+5.13.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \TopEntity.
+Performed a total of 0 changes.
+
+5.13.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.13.6. Executing OPT_DFF pass (perform DFF optimizations).
+Adding SRST signal on $flatten\yaw_decoder.$procdff$646 ($dff) from module TopEntity (D = $flatten\yaw_decoder.$procmux$550_Y, Q = \yaw_decoder.state, rval = 2'00).
+Adding EN signal on $auto$ff.cc:266:slice$661 ($sdff) from module TopEntity (D = $flatten\yaw_decoder.$procmux$550_Y, Q = \yaw_decoder.state).
+Adding SRST signal on $flatten\yaw_decoder.$procdff$645 ($dff) from module TopEntity (D = $flatten\yaw_decoder.$procmux$578_Y, Q = \yaw_decoder.count, rval = 16'0000000000000000).
+Adding EN signal on $auto$ff.cc:266:slice$671 ($sdff) from module TopEntity (D = $flatten\yaw_decoder.$procmux$578_Y, Q = \yaw_decoder.count).
+Adding SRST signal on $flatten\spi_comm.$procdff$641 ($dff) from module TopEntity (D = $flatten\spi_comm.$procmux$480_Y, Q = \spi_comm.yaw_pwm_enable_r, rval = 1'0).
+Adding EN signal on $auto$ff.cc:266:slice$685 ($sdff) from module TopEntity (D = \spi_comm.rx_shift [30], Q = \spi_comm.yaw_pwm_enable_r).
+Adding SRST signal on $flatten\spi_comm.$procdff$640 ($dff) from module TopEntity (D = $flatten\spi_comm.$procmux$485_Y, Q = \spi_comm.yaw_dir_r, rval = 1'0).
+Adding EN signal on $auto$ff.cc:266:slice$687 ($sdff) from module TopEntity (D = \spi_comm.rx_shift [31], Q = \spi_comm.yaw_dir_r).
+Adding SRST signal on $flatten\spi_comm.$procdff$639 ($dff) from module TopEntity (D = $flatten\spi_comm.$procmux$490_Y, Q = \spi_comm.yaw_pwm_duty_r, rval = 14'00000000000000).
+Adding EN signal on $auto$ff.cc:266:slice$689 ($sdff) from module TopEntity (D = \spi_comm.rx_shift [29:16], Q = \spi_comm.yaw_pwm_duty_r).
+Adding SRST signal on $flatten\spi_comm.$procdff$638 ($dff) from module TopEntity (D = $flatten\spi_comm.$procmux$495_Y, Q = \spi_comm.pitch_pwm_enable_r, rval = 1'0).
+Adding EN signal on $auto$ff.cc:266:slice$691 ($sdff) from module TopEntity (D = \spi_comm.rx_shift [14], Q = \spi_comm.pitch_pwm_enable_r).
+Adding SRST signal on $flatten\spi_comm.$procdff$637 ($dff) from module TopEntity (D = $flatten\spi_comm.$procmux$500_Y, Q = \spi_comm.pitch_dir_r, rval = 1'0).
+Adding EN signal on $auto$ff.cc:266:slice$693 ($sdff) from module TopEntity (D = \spi_comm.rx_shift [15], Q = \spi_comm.pitch_dir_r).
+Adding SRST signal on $flatten\spi_comm.$procdff$636 ($dff) from module TopEntity (D = $flatten\spi_comm.$procmux$505_Y, Q = \spi_comm.pitch_pwm_duty_r, rval = 14'00000000000000).
+Adding EN signal on $auto$ff.cc:266:slice$695 ($sdff) from module TopEntity (D = \spi_comm.rx_shift [13:0], Q = \spi_comm.pitch_pwm_duty_r).
+Adding SRST signal on $flatten\spi_comm.$procdff$635 ($dff) from module TopEntity (D = $flatten\spi_comm.$procmux$512_Y, Q = \spi_comm.bit_count, rval = 6'000000).
+Adding EN signal on $auto$ff.cc:266:slice$697 ($sdff) from module TopEntity (D = $flatten\spi_comm.$add$SPI.v:95$420_Y, Q = \spi_comm.bit_count).
+Adding SRST signal on $flatten\spi_comm.$procdff$634 ($dff) from module TopEntity (D = $flatten\spi_comm.$procmux$529_Y [31:1], Q = \spi_comm.tx_shift [31:1], rval = 31'0000000000000000000000000000000).
+Adding SRST signal on $flatten\spi_comm.$procdff$634 ($dff) from module TopEntity (D = $flatten\spi_comm.$procmux$527_Y [0], Q = \spi_comm.tx_shift [0], rval = 1'0).
+Adding EN signal on $auto$ff.cc:266:slice$704 ($sdff) from module TopEntity (D = $flatten\spi_comm.$procmux$527_Y [0], Q = \spi_comm.tx_shift [0]).
+Adding EN signal on $auto$ff.cc:266:slice$703 ($sdff) from module TopEntity (D = $flatten\spi_comm.$procmux$529_Y [31:1], Q = \spi_comm.tx_shift [31:1]).
+Adding SRST signal on $flatten\spi_comm.$procdff$633 ($dff) from module TopEntity (D = $flatten\spi_comm.$procmux$534_Y, Q = \spi_comm.rx_shift, rval = 0).
+Adding EN signal on $auto$ff.cc:266:slice$713 ($sdff) from module TopEntity (D = { \spi_comm.rx_shift [30:0] \spi_comm.SPI_PICOr [1] }, Q = \spi_comm.rx_shift).
+Adding SRST signal on $flatten\pitch_decoder.$procdff$646 ($dff) from module TopEntity (D = $flatten\pitch_decoder.$procmux$550_Y, Q = \pitch_decoder.state, rval = 2'00).
+Adding EN signal on $auto$ff.cc:266:slice$717 ($sdff) from module TopEntity (D = $flatten\pitch_decoder.$procmux$550_Y, Q = \pitch_decoder.state).
+Adding SRST signal on $flatten\pitch_decoder.$procdff$645 ($dff) from module TopEntity (D = $flatten\pitch_decoder.$procmux$578_Y, Q = \pitch_decoder.count, rval = 16'0000000000000000).
+Adding EN signal on $auto$ff.cc:266:slice$727 ($sdff) from module TopEntity (D = $flatten\pitch_decoder.$procmux$578_Y, Q = \pitch_decoder.count).
+
+5.13.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+Removed 26 unused cells and 26 unused wires.
+<suppressed ~27 debug messages>
+
+5.13.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+<suppressed ~6 debug messages>
+
+5.13.9. Rerunning OPT passes. (Maybe there is more to do..)
+
+5.13.10. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \TopEntity..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~14 debug messages>
+
+5.13.11. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \TopEntity.
+Performed a total of 0 changes.
+
+5.13.12. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+<suppressed ~3 debug messages>
+Removed a total of 1 cells.
+
+5.13.13. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.13.14. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+Removed 0 unused cells and 1 unused wires.
+<suppressed ~1 debug messages>
+
+5.13.15. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.13.16. Rerunning OPT passes. (Maybe there is more to do..)
+
+5.13.17. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \TopEntity..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~14 debug messages>
+
+5.13.18. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \TopEntity.
+Performed a total of 0 changes.
+
+5.13.19. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.13.20. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.13.21. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+
+5.13.22. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.13.23. Finished OPT passes. (There is nothing left to do.)
+
+5.14. Executing WREDUCE pass (reducing word size of cells).
+Removed top 2 bits (of 3) from port B of cell TopEntity.$auto$opt_dff.cc:195:make_patterns_logic$666 ($ne).
+Removed top 2 bits (of 3) from port B of cell TopEntity.$auto$opt_dff.cc:195:make_patterns_logic$668 ($ne).
+Removed top 5 bits (of 6) from port B of cell TopEntity.$flatten\spi_comm.$add$SPI.v:95$420 ($add).
+Removed top 1 bits (of 2) from port B of cell TopEntity.$flatten\spi_comm.$eq$SPI.v:48$414 ($eq).
+Removed top 1 bits (of 2) from port B of cell TopEntity.$flatten\spi_comm.$eq$SPI.v:39$409 ($eq).
+Removed top 1 bits (of 2) from port B of cell TopEntity.$flatten\pitch_decoder.$procmux$563_CMP0 ($eq).
+Removed top 2 bits (of 3) from port B of cell TopEntity.$auto$opt_dff.cc:195:make_patterns_logic$738 ($ne).
+Removed top 30 bits (of 32) from port B of cell TopEntity.$flatten\pitch_decoder.$add$QuadDecoder.v:38$392 ($add).
+Removed top 16 bits (of 32) from port Y of cell TopEntity.$flatten\pitch_decoder.$add$QuadDecoder.v:38$392 ($add).
+Removed top 30 bits (of 32) from port B of cell TopEntity.$flatten\pitch_decoder.$sub$QuadDecoder.v:34$390 ($sub).
+Removed top 16 bits (of 32) from port Y of cell TopEntity.$flatten\pitch_decoder.$sub$QuadDecoder.v:34$390 ($sub).
+Removed top 1 bits (of 2) from port B of cell TopEntity.$flatten\pitch_decoder.$eq$QuadDecoder.v:33$389 ($eq).
+Removed top 20 bits (of 32) from port B of cell TopEntity.$flatten\pitch_pwm.$ge$PWM.v:27$382 ($ge).
+Removed top 2 bits (of 3) from port B of cell TopEntity.$auto$opt_dff.cc:195:make_patterns_logic$682 ($ne).
+Removed top 2 bits (of 3) from port B of cell TopEntity.$auto$opt_dff.cc:195:make_patterns_logic$680 ($ne).
+Removed top 2 bits (of 3) from port B of cell TopEntity.$auto$opt_dff.cc:195:make_patterns_logic$676 ($ne).
+Removed top 2 bits (of 3) from port B of cell TopEntity.$auto$opt_dff.cc:195:make_patterns_logic$678 ($ne).
+Removed top 2 bits (of 3) from port B of cell TopEntity.$auto$opt_dff.cc:195:make_patterns_logic$724 ($ne).
+Removed top 1 bits (of 2) from port B of cell TopEntity.$flatten\yaw_decoder.$procmux$563_CMP0 ($eq).
+Removed top 2 bits (of 3) from port B of cell TopEntity.$auto$opt_dff.cc:195:make_patterns_logic$734 ($ne).
+Removed top 2 bits (of 3) from port B of cell TopEntity.$auto$opt_dff.cc:195:make_patterns_logic$732 ($ne).
+Removed top 2 bits (of 3) from port B of cell TopEntity.$auto$opt_dff.cc:195:make_patterns_logic$722 ($ne).
+Removed top 2 bits (of 3) from port B of cell TopEntity.$auto$opt_dff.cc:195:make_patterns_logic$736 ($ne).
+Removed top 30 bits (of 32) from port B of cell TopEntity.$flatten\yaw_decoder.$add$QuadDecoder.v:38$392 ($add).
+Removed top 16 bits (of 32) from port Y of cell TopEntity.$flatten\yaw_decoder.$add$QuadDecoder.v:38$392 ($add).
+Removed top 30 bits (of 32) from port B of cell TopEntity.$flatten\yaw_decoder.$sub$QuadDecoder.v:34$390 ($sub).
+Removed top 16 bits (of 32) from port Y of cell TopEntity.$flatten\yaw_decoder.$sub$QuadDecoder.v:34$390 ($sub).
+Removed top 1 bits (of 2) from port B of cell TopEntity.$flatten\yaw_decoder.$eq$QuadDecoder.v:33$389 ($eq).
+Removed top 20 bits (of 32) from port B of cell TopEntity.$flatten\yaw_pwm.$ge$PWM.v:27$382 ($ge).
+Removed top 16 bits (of 32) from wire TopEntity.$flatten\pitch_decoder.$add$QuadDecoder.v:38$392_Y.
+Removed top 16 bits (of 32) from wire TopEntity.$flatten\yaw_decoder.$add$QuadDecoder.v:38$392_Y.
+
+5.15. Executing PEEPOPT pass (run peephole optimizers).
+
+5.16. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+Removed 0 unused cells and 2 unused wires.
+<suppressed ~1 debug messages>
+
+5.17. Executing SHARE pass (SAT-based resource sharing).
+
+5.18. Executing TECHMAP pass (map to technology primitives).
+
+5.18.1. Executing Verilog-2005 frontend: /usr/bin/../share/yosys/cmp2lut.v
+Parsing Verilog input from `/usr/bin/../share/yosys/cmp2lut.v' to AST representation.
+Generating RTLIL representation for module `\_90_lut_cmp_'.
+Successfully finished Verilog frontend.
+
+5.18.2. Continuing TECHMAP pass.
+No more expansions possible.
+<suppressed ~88 debug messages>
+
+5.19. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.20. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+
+5.21. Executing ALUMACC pass (create $alu and $macc cells).
+Extracting $alu and $macc cells in module TopEntity:
+  creating $macc model for $flatten\pitch_decoder.$add$QuadDecoder.v:38$392 ($add).
+  creating $macc model for $flatten\pitch_decoder.$sub$QuadDecoder.v:34$390 ($sub).
+  creating $macc model for $flatten\pitch_pwm.$add$PWM.v:30$383 ($add).
+  creating $macc model for $flatten\spi_comm.$add$SPI.v:95$420 ($add).
+  creating $macc model for $flatten\yaw_decoder.$add$QuadDecoder.v:38$392 ($add).
+  creating $macc model for $flatten\yaw_decoder.$sub$QuadDecoder.v:34$390 ($sub).
+  creating $macc model for $flatten\yaw_pwm.$add$PWM.v:30$383 ($add).
+  creating $alu model for $macc $flatten\yaw_pwm.$add$PWM.v:30$383.
+  creating $alu model for $macc $flatten\yaw_decoder.$sub$QuadDecoder.v:34$390.
+  creating $alu model for $macc $flatten\yaw_decoder.$add$QuadDecoder.v:38$392.
+  creating $alu model for $macc $flatten\spi_comm.$add$SPI.v:95$420.
+  creating $alu model for $macc $flatten\pitch_pwm.$add$PWM.v:30$383.
+  creating $alu model for $macc $flatten\pitch_decoder.$sub$QuadDecoder.v:34$390.
+  creating $alu model for $macc $flatten\pitch_decoder.$add$QuadDecoder.v:38$392.
+  creating $alu model for $flatten\pitch_pwm.$ge$PWM.v:27$382 ($ge): new $alu
+  creating $alu model for $flatten\pitch_pwm.$lt$PWM.v:47$386 ($lt): new $alu
+  creating $alu model for $flatten\spi_comm.$lt$SPI.v:94$419 ($lt): new $alu
+  creating $alu model for $flatten\yaw_pwm.$ge$PWM.v:27$382 ($ge): new $alu
+  creating $alu model for $flatten\yaw_pwm.$lt$PWM.v:47$386 ($lt): new $alu
+  creating $alu model for $flatten\spi_comm.$eq$SPI.v:111$422 ($eq): merged with $flatten\spi_comm.$lt$SPI.v:94$419.
+  creating $alu cell for $flatten\yaw_pwm.$lt$PWM.v:47$386: $auto$alumacc.cc:485:replace_alu$749
+  creating $alu cell for $flatten\yaw_pwm.$ge$PWM.v:27$382: $auto$alumacc.cc:485:replace_alu$760
+  creating $alu cell for $flatten\spi_comm.$lt$SPI.v:94$419, $flatten\spi_comm.$eq$SPI.v:111$422: $auto$alumacc.cc:485:replace_alu$769
+  creating $alu cell for $flatten\pitch_pwm.$lt$PWM.v:47$386: $auto$alumacc.cc:485:replace_alu$780
+  creating $alu cell for $flatten\pitch_pwm.$ge$PWM.v:27$382: $auto$alumacc.cc:485:replace_alu$785
+  creating $alu cell for $flatten\pitch_decoder.$add$QuadDecoder.v:38$392: $auto$alumacc.cc:485:replace_alu$794
+  creating $alu cell for $flatten\pitch_decoder.$sub$QuadDecoder.v:34$390: $auto$alumacc.cc:485:replace_alu$797
+  creating $alu cell for $flatten\pitch_pwm.$add$PWM.v:30$383: $auto$alumacc.cc:485:replace_alu$800
+  creating $alu cell for $flatten\spi_comm.$add$SPI.v:95$420: $auto$alumacc.cc:485:replace_alu$803
+  creating $alu cell for $flatten\yaw_decoder.$add$QuadDecoder.v:38$392: $auto$alumacc.cc:485:replace_alu$806
+  creating $alu cell for $flatten\yaw_decoder.$sub$QuadDecoder.v:34$390: $auto$alumacc.cc:485:replace_alu$809
+  creating $alu cell for $flatten\yaw_pwm.$add$PWM.v:30$383: $auto$alumacc.cc:485:replace_alu$812
+  created 12 $alu and 0 $macc cells.
+
+5.22. Executing OPT pass (performing simple optimizations).
+
+5.22.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.22.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.22.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \TopEntity..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~14 debug messages>
+
+5.22.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \TopEntity.
+Performed a total of 0 changes.
+
+5.22.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.22.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.22.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+Removed 0 unused cells and 6 unused wires.
+<suppressed ~1 debug messages>
+
+5.22.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.22.9. Rerunning OPT passes. (Maybe there is more to do..)
+
+5.22.10. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \TopEntity..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~14 debug messages>
+
+5.22.11. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \TopEntity.
+Performed a total of 0 changes.
+
+5.22.12. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.22.13. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.22.14. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+
+5.22.15. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.22.16. Finished OPT passes. (There is nothing left to do.)
+
+5.23. Executing MEMORY pass.
+
+5.23.1. Executing OPT_MEM pass (optimize memories).
+Performed a total of 0 transformations.
+
+5.23.2. Executing OPT_MEM_PRIORITY pass (removing unnecessary memory write priority relations).
+Performed a total of 0 transformations.
+
+5.23.3. Executing OPT_MEM_FEEDBACK pass (finding memory read-to-write feedback paths).
+
+5.23.4. Executing MEMORY_BMUX2ROM pass (converting muxes to ROMs).
+
+5.23.5. Executing MEMORY_DFF pass (merging $dff cells to $memrd).
+
+5.23.6. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+
+5.23.7. Executing MEMORY_SHARE pass (consolidating $memrd/$memwr cells).
+
+5.23.8. Executing OPT_MEM_WIDEN pass (optimize memories where all ports are wide).
+Performed a total of 0 transformations.
+
+5.23.9. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+
+5.23.10. Executing MEMORY_COLLECT pass (generating $mem cells).
+
+5.24. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+
+5.25. Executing MEMORY_LIBMAP pass (mapping memories to cells).
+
+5.26. Executing TECHMAP pass (map to technology primitives).
+
+5.26.1. Executing Verilog-2005 frontend: /usr/bin/../share/yosys/ice40/brams_map.v
+Parsing Verilog input from `/usr/bin/../share/yosys/ice40/brams_map.v' to AST representation.
+Generating RTLIL representation for module `\$__ICE40_RAM4K_'.
+Successfully finished Verilog frontend.
+
+5.26.2. Executing Verilog-2005 frontend: /usr/bin/../share/yosys/ice40/spram_map.v
+Parsing Verilog input from `/usr/bin/../share/yosys/ice40/spram_map.v' to AST representation.
+Generating RTLIL representation for module `\$__ICE40_SPRAM_'.
+Successfully finished Verilog frontend.
+
+5.26.3. Continuing TECHMAP pass.
+No more expansions possible.
+<suppressed ~4 debug messages>
+
+5.27. Executing ICE40_BRAMINIT pass.
+
+5.28. Executing OPT pass (performing simple optimizations).
+
+5.28.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+<suppressed ~20 debug messages>
+
+5.28.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.28.3. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.28.4. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+Removed 4 unused cells and 18 unused wires.
+<suppressed ~5 debug messages>
+
+5.28.5. Finished fast OPT passes.
+
+5.29. Executing MEMORY_MAP pass (converting memories to logic and flip-flops).
+
+5.30. Executing OPT pass (performing simple optimizations).
+
+5.30.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.30.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.30.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \TopEntity..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~13 debug messages>
+
+5.30.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \TopEntity.
+    Consolidated identical input bits for $mux cell $flatten\pitch_decoder.$procmux$555:
+      Old ports: A=2'11, B=2'00, Y=$flatten\pitch_decoder.$procmux$555_Y
+      New ports: A=1'1, B=1'0, Y=$flatten\pitch_decoder.$procmux$555_Y [0]
+      New connections: $flatten\pitch_decoder.$procmux$555_Y [1] = $flatten\pitch_decoder.$procmux$555_Y [0]
+    Consolidated identical input bits for $mux cell $flatten\yaw_decoder.$procmux$555:
+      Old ports: A=2'11, B=2'00, Y=$flatten\yaw_decoder.$procmux$555_Y
+      New ports: A=1'1, B=1'0, Y=$flatten\yaw_decoder.$procmux$555_Y [0]
+      New connections: $flatten\yaw_decoder.$procmux$555_Y [1] = $flatten\yaw_decoder.$procmux$555_Y [0]
+  Optimizing cells in module \TopEntity.
+Performed a total of 2 changes.
+
+5.30.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.30.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.30.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+
+5.30.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.30.9. Rerunning OPT passes. (Maybe there is more to do..)
+
+5.30.10. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \TopEntity..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~13 debug messages>
+
+5.30.11. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \TopEntity.
+Performed a total of 0 changes.
+
+5.30.12. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.30.13. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.30.14. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+
+5.30.15. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.30.16. Finished OPT passes. (There is nothing left to do.)
+
+5.31. Executing ICE40_WRAPCARRY pass (wrap carries).
+
+5.32. Executing TECHMAP pass (map to technology primitives).
+
+5.32.1. Executing Verilog-2005 frontend: /usr/bin/../share/yosys/techmap.v
+Parsing Verilog input from `/usr/bin/../share/yosys/techmap.v' to AST representation.
+Generating RTLIL representation for module `\_90_simplemap_bool_ops'.
+Generating RTLIL representation for module `\_90_simplemap_reduce_ops'.
+Generating RTLIL representation for module `\_90_simplemap_logic_ops'.
+Generating RTLIL representation for module `\_90_simplemap_compare_ops'.
+Generating RTLIL representation for module `\_90_simplemap_various'.
+Generating RTLIL representation for module `\_90_simplemap_registers'.
+Generating RTLIL representation for module `\_90_shift_ops_shr_shl_sshl_sshr'.
+Generating RTLIL representation for module `\_90_shift_shiftx'.
+Generating RTLIL representation for module `\_90_fa'.
+Generating RTLIL representation for module `\_90_lcu'.
+Generating RTLIL representation for module `\_90_alu'.
+Generating RTLIL representation for module `\_90_macc'.
+Generating RTLIL representation for module `\_90_alumacc'.
+Generating RTLIL representation for module `\$__div_mod_u'.
+Generating RTLIL representation for module `\$__div_mod_trunc'.
+Generating RTLIL representation for module `\_90_div'.
+Generating RTLIL representation for module `\_90_mod'.
+Generating RTLIL representation for module `\$__div_mod_floor'.
+Generating RTLIL representation for module `\_90_divfloor'.
+Generating RTLIL representation for module `\_90_modfloor'.
+Generating RTLIL representation for module `\_90_pow'.
+Generating RTLIL representation for module `\_90_pmux'.
+Generating RTLIL representation for module `\_90_demux'.
+Generating RTLIL representation for module `\_90_lut'.
+Successfully finished Verilog frontend.
+
+5.32.2. Executing Verilog-2005 frontend: /usr/bin/../share/yosys/ice40/arith_map.v
+Parsing Verilog input from `/usr/bin/../share/yosys/ice40/arith_map.v' to AST representation.
+Generating RTLIL representation for module `\_80_ice40_alu'.
+Successfully finished Verilog frontend.
+
+5.32.3. Continuing TECHMAP pass.
+Using extmapper simplemap for cells of type $not.
+Using extmapper simplemap for cells of type $reduce_or.
+Using extmapper simplemap for cells of type $reduce_and.
+Using extmapper simplemap for cells of type $or.
+Using template $paramod$091610cd349a68bd5539cffd7126f0d76e9bca00\_80_ice40_alu for cells of type $alu.
+Using extmapper simplemap for cells of type $ne.
+Using extmapper simplemap for cells of type $dff.
+Using extmapper simplemap for cells of type $sdffe.
+Using extmapper simplemap for cells of type $mux.
+Using extmapper simplemap for cells of type $logic_and.
+Using template $paramod$fe36d6d725c0243822683f7451312ebcd99a78d3\_80_ice40_alu for cells of type $alu.
+Using extmapper simplemap for cells of type $eq.
+Using extmapper simplemap for cells of type $reduce_bool.
+Using template $paramod$d5c1c4131927aec19f116e7a36372b1981bfcd7e\_90_pmux for cells of type $pmux.
+Using extmapper simplemap for cells of type $logic_not.
+Using template $paramod$671ef65ffb87ed7afa3c013075cd7c452d33c3fd\_80_ice40_alu for cells of type $alu.
+Using template $paramod$713617589782cfade849bb573b5c36106c4b708f\_80_ice40_alu for cells of type $alu.
+Using extmapper simplemap for cells of type $adff.
+Using template $paramod$b40e0f66d01d243904da425c63ff802ae596888e\_80_ice40_alu for cells of type $alu.
+Using template $paramod$32efbfac1c4dc57230cf86180788fdfd12e3b511\_80_ice40_alu for cells of type $alu.
+Using template $paramod$00298f3f8094950cb9a5ff2fda48d0d8bde8806c\_80_ice40_alu for cells of type $alu.
+Using extmapper simplemap for cells of type $pos.
+Using extmapper simplemap for cells of type $xor.
+Using extmapper simplemap for cells of type $and.
+No more expansions possible.
+<suppressed ~457 debug messages>
+
+5.33. Executing OPT pass (performing simple optimizations).
+
+5.33.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+<suppressed ~539 debug messages>
+
+5.33.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+<suppressed ~276 debug messages>
+Removed a total of 92 cells.
+
+5.33.3. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.33.4. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+Removed 49 unused cells and 459 unused wires.
+<suppressed ~50 debug messages>
+
+5.33.5. Finished fast OPT passes.
+
+5.34. Executing ICE40_OPT pass (performing simple optimizations).
+
+5.34.1. Running ICE40 specific optimizations.
+Optimized $__ICE40_CARRY_WRAPPER cell back to logic (without SB_CARRY) TopEntity.$auto$alumacc.cc:485:replace_alu$760.slice[0].carry: CO=$auto$alumacc.cc:485:replace_alu$749.BB [2]
+Optimized $__ICE40_CARRY_WRAPPER cell back to logic (without SB_CARRY) TopEntity.$auto$alumacc.cc:485:replace_alu$769.slice[0].carry: CO=$auto$alumacc.cc:485:replace_alu$769.BB [0]
+Optimized $__ICE40_CARRY_WRAPPER cell back to logic (without SB_CARRY) TopEntity.$auto$alumacc.cc:485:replace_alu$785.slice[0].carry: CO=$auto$alumacc.cc:485:replace_alu$785.BB [0]
+Optimized $__ICE40_CARRY_WRAPPER cell back to logic (without SB_CARRY) TopEntity.$auto$alumacc.cc:485:replace_alu$794.slice[0].carry: CO=\pitch_decoder.count [0]
+Optimized $__ICE40_CARRY_WRAPPER cell back to logic (without SB_CARRY) TopEntity.$auto$alumacc.cc:485:replace_alu$797.slice[0].carry: CO=\pitch_decoder.count [0]
+Optimized $__ICE40_CARRY_WRAPPER cell back to logic (without SB_CARRY) TopEntity.$auto$alumacc.cc:485:replace_alu$800.slice[0].carry: CO=\pitch_pwm.counter [0]
+Optimized $__ICE40_CARRY_WRAPPER cell back to logic (without SB_CARRY) TopEntity.$auto$alumacc.cc:485:replace_alu$803.slice[0].carry: CO=\spi_comm.bit_count [0]
+Optimized $__ICE40_CARRY_WRAPPER cell back to logic (without SB_CARRY) TopEntity.$auto$alumacc.cc:485:replace_alu$806.slice[0].carry: CO=\yaw_decoder.count [0]
+Optimized $__ICE40_CARRY_WRAPPER cell back to logic (without SB_CARRY) TopEntity.$auto$alumacc.cc:485:replace_alu$809.slice[0].carry: CO=\yaw_decoder.count [0]
+Optimized $__ICE40_CARRY_WRAPPER cell back to logic (without SB_CARRY) TopEntity.$auto$alumacc.cc:485:replace_alu$812.slice[0].carry: CO=\yaw_pwm.counter [0]
+
+5.34.2. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.34.3. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.34.4. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.34.5. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+Removed 3 unused cells and 0 unused wires.
+<suppressed ~3 debug messages>
+
+5.34.6. Rerunning OPT passes. (Removed registers in this run.)
+
+5.34.7. Running ICE40 specific optimizations.
+
+5.34.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.34.9. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.34.10. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.34.11. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+
+5.34.12. Finished OPT passes. (There is nothing left to do.)
+
+5.35. Executing DFFLEGALIZE pass (convert FFs to types supported by the target).
+
+5.36. Executing TECHMAP pass (map to technology primitives).
+
+5.36.1. Executing Verilog-2005 frontend: /usr/bin/../share/yosys/ice40/ff_map.v
+Parsing Verilog input from `/usr/bin/../share/yosys/ice40/ff_map.v' to AST representation.
+Generating RTLIL representation for module `\$_DFF_N_'.
+Generating RTLIL representation for module `\$_DFF_P_'.
+Generating RTLIL representation for module `\$_DFFE_NP_'.
+Generating RTLIL representation for module `\$_DFFE_PP_'.
+Generating RTLIL representation for module `\$_DFF_NP0_'.
+Generating RTLIL representation for module `\$_DFF_NP1_'.
+Generating RTLIL representation for module `\$_DFF_PP0_'.
+Generating RTLIL representation for module `\$_DFF_PP1_'.
+Generating RTLIL representation for module `\$_DFFE_NP0P_'.
+Generating RTLIL representation for module `\$_DFFE_NP1P_'.
+Generating RTLIL representation for module `\$_DFFE_PP0P_'.
+Generating RTLIL representation for module `\$_DFFE_PP1P_'.
+Generating RTLIL representation for module `\$_SDFF_NP0_'.
+Generating RTLIL representation for module `\$_SDFF_NP1_'.
+Generating RTLIL representation for module `\$_SDFF_PP0_'.
+Generating RTLIL representation for module `\$_SDFF_PP1_'.
+Generating RTLIL representation for module `\$_SDFFCE_NP0P_'.
+Generating RTLIL representation for module `\$_SDFFCE_NP1P_'.
+Generating RTLIL representation for module `\$_SDFFCE_PP0P_'.
+Generating RTLIL representation for module `\$_SDFFCE_PP1P_'.
+Successfully finished Verilog frontend.
+
+5.36.2. Continuing TECHMAP pass.
+Using template \$_DFF_P_ for cells of type $_DFF_P_.
+Using template \$_SDFFCE_PP0P_ for cells of type $_SDFFCE_PP0P_.
+Using template \$_DFF_PP0_ for cells of type $_DFF_PP0_.
+No more expansions possible.
+<suppressed ~210 debug messages>
+
+5.37. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+<suppressed ~4 debug messages>
+
+5.38. Executing SIMPLEMAP pass (map simple cells to gate primitives).
+Mapping TopEntity.$auto$alumacc.cc:485:replace_alu$794.slice[0].carry ($lut).
+Mapping TopEntity.$auto$alumacc.cc:485:replace_alu$797.slice[0].carry ($lut).
+Mapping TopEntity.$auto$alumacc.cc:485:replace_alu$800.slice[0].carry ($lut).
+Mapping TopEntity.$auto$alumacc.cc:485:replace_alu$803.slice[0].carry ($lut).
+Mapping TopEntity.$auto$alumacc.cc:485:replace_alu$806.slice[0].carry ($lut).
+Mapping TopEntity.$auto$alumacc.cc:485:replace_alu$809.slice[0].carry ($lut).
+Mapping TopEntity.$auto$alumacc.cc:485:replace_alu$812.slice[0].carry ($lut).
+
+5.39. Executing ICE40_OPT pass (performing simple optimizations).
+
+5.39.1. Running ICE40 specific optimizations.
+
+5.39.2. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+<suppressed ~102 debug messages>
+
+5.39.3. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+<suppressed ~417 debug messages>
+Removed a total of 139 cells.
+
+5.39.4. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.39.5. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+Removed 1 unused cells and 1223 unused wires.
+<suppressed ~2 debug messages>
+
+5.39.6. Rerunning OPT passes. (Removed registers in this run.)
+
+5.39.7. Running ICE40 specific optimizations.
+
+5.39.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+<suppressed ~5 debug messages>
+
+5.39.9. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.39.10. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.39.11. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+
+5.39.12. Rerunning OPT passes. (Removed registers in this run.)
+
+5.39.13. Running ICE40 specific optimizations.
+
+5.39.14. Executing OPT_EXPR pass (perform const folding).
+Optimizing module TopEntity.
+
+5.39.15. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\TopEntity'.
+Removed a total of 0 cells.
+
+5.39.16. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.39.17. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \TopEntity..
+
+5.39.18. Finished OPT passes. (There is nothing left to do.)
+
+5.40. Executing TECHMAP pass (map to technology primitives).
+
+5.40.1. Executing Verilog-2005 frontend: /usr/bin/../share/yosys/ice40/latches_map.v
+Parsing Verilog input from `/usr/bin/../share/yosys/ice40/latches_map.v' to AST representation.
+Generating RTLIL representation for module `\$_DLATCH_N_'.
+Generating RTLIL representation for module `\$_DLATCH_P_'.
+Successfully finished Verilog frontend.
+
+5.40.2. Continuing TECHMAP pass.
+No more expansions possible.
+<suppressed ~4 debug messages>
+
+5.41. Executing ABC pass (technology mapping using ABC).
+
+5.41.1. Extracting gate netlist of module `\TopEntity' to `<abc-temp-dir>/input.blif'..
+Extracted 627 gates and 862 wires to a netlist network with 234 inputs and 159 outputs.
+
+5.41.1.1. Executing ABC.
+Running ABC command: "<yosys-exe-dir>/yosys-abc" -s -f <abc-temp-dir>/abc.script 2>&1
+ABC: ABC command line: "source <abc-temp-dir>/abc.script".
+ABC: 
+ABC: + read_blif <abc-temp-dir>/input.blif 
+ABC: + read_lut <abc-temp-dir>/lutdefs.txt 
+ABC: + strash 
+ABC: + &get -n 
+ABC: + &fraig -x 
+ABC: + &put 
+ABC: + scorr 
+ABC: Warning: The network is combinational (run "fraig" or "fraig_sweep").
+ABC: + dc2 
+ABC: + dretime 
+ABC: + strash 
+ABC: + dch -f 
+ABC: + if 
+ABC: + mfs2 
+ABC: + lutpack -S 1 
+ABC: + dress <abc-temp-dir>/input.blif 
+ABC: Total number of equiv classes                =     167.
+ABC: Participating nodes from both networks       =     350.
+ABC: Participating nodes from the first network   =     169. (  66.02 % of nodes)
+ABC: Participating nodes from the second network  =     181. (  70.70 % of nodes)
+ABC: Node pairs (any polarity)                    =     169. (  66.02 % of names can be moved)
+ABC: Node pairs (same polarity)                   =     169. (  66.02 % of names can be moved)
+ABC: Total runtime =     0.10 sec
+ABC: + write_blif <abc-temp-dir>/output.blif 
+
+5.41.1.2. Re-integrating ABC results.
+ABC RESULTS:              $lut cells:      255
+ABC RESULTS:        internal signals:      469
+ABC RESULTS:           input signals:      234
+ABC RESULTS:          output signals:      159
+Removing temp directory.
+
+5.42. Executing ICE40_WRAPCARRY pass (wrap carries).
+
+5.43. Executing TECHMAP pass (map to technology primitives).
+
+5.43.1. Executing Verilog-2005 frontend: /usr/bin/../share/yosys/ice40/ff_map.v
+Parsing Verilog input from `/usr/bin/../share/yosys/ice40/ff_map.v' to AST representation.
+Generating RTLIL representation for module `\$_DFF_N_'.
+Generating RTLIL representation for module `\$_DFF_P_'.
+Generating RTLIL representation for module `\$_DFFE_NP_'.
+Generating RTLIL representation for module `\$_DFFE_PP_'.
+Generating RTLIL representation for module `\$_DFF_NP0_'.
+Generating RTLIL representation for module `\$_DFF_NP1_'.
+Generating RTLIL representation for module `\$_DFF_PP0_'.
+Generating RTLIL representation for module `\$_DFF_PP1_'.
+Generating RTLIL representation for module `\$_DFFE_NP0P_'.
+Generating RTLIL representation for module `\$_DFFE_NP1P_'.
+Generating RTLIL representation for module `\$_DFFE_PP0P_'.
+Generating RTLIL representation for module `\$_DFFE_PP1P_'.
+Generating RTLIL representation for module `\$_SDFF_NP0_'.
+Generating RTLIL representation for module `\$_SDFF_NP1_'.
+Generating RTLIL representation for module `\$_SDFF_PP0_'.
+Generating RTLIL representation for module `\$_SDFF_PP1_'.
+Generating RTLIL representation for module `\$_SDFFCE_NP0P_'.
+Generating RTLIL representation for module `\$_SDFFCE_NP1P_'.
+Generating RTLIL representation for module `\$_SDFFCE_PP0P_'.
+Generating RTLIL representation for module `\$_SDFFCE_PP1P_'.
+Successfully finished Verilog frontend.
+
+5.43.2. Continuing TECHMAP pass.
+No more expansions possible.
+<suppressed ~22 debug messages>
+Removed 62 unused cells and 518 unused wires.
+
+5.44. Executing OPT_LUT pass (optimize LUTs).
+Discovering LUTs.
+Number of LUTs:      344
+  1-LUT               49
+  2-LUT               55
+  3-LUT              125
+  4-LUT              115
+  with \SB_CARRY    (#0)   84
+  with \SB_CARRY    (#1)  110
+
+Eliminating LUTs.
+Number of LUTs:      344
+  1-LUT               49
+  2-LUT               55
+  3-LUT              125
+  4-LUT              115
+  with \SB_CARRY    (#0)   84
+  with \SB_CARRY    (#1)  110
+
+Combining LUTs.
+Number of LUTs:      344
+  1-LUT               49
+  2-LUT               55
+  3-LUT              125
+  4-LUT              115
+  with \SB_CARRY    (#0)   84
+  with \SB_CARRY    (#1)  110
+
+Eliminated 0 LUTs.
+Combined 0 LUTs.
+<suppressed ~1696 debug messages>
+
+5.45. Executing TECHMAP pass (map to technology primitives).
+
+5.45.1. Executing Verilog-2005 frontend: /usr/bin/../share/yosys/ice40/cells_map.v
+Parsing Verilog input from `/usr/bin/../share/yosys/ice40/cells_map.v' to AST representation.
+Generating RTLIL representation for module `\$lut'.
+Successfully finished Verilog frontend.
+
+5.45.2. Continuing TECHMAP pass.
+Using template $paramod$fd904e9e35cfd343a9df248824bd3f1408724879\$lut for cells of type $lut.
+Using template $paramod\$lut\WIDTH=32'00000000000000000000000000000011\LUT=8'10111111 for cells of type $lut.
+Using template $paramod\$lut\WIDTH=32'00000000000000000000000000000011\LUT=8'11110100 for cells of type $lut.
+Using template $paramod\$lut\WIDTH=32'00000000000000000000000000000011\LUT=8'01000000 for cells of type $lut.
+Using template $paramod\$lut\WIDTH=32'00000000000000000000000000000011\LUT=8'11001010 for cells of type $lut.
+Using template $paramod$82ac4228e04c92c7b8c133bfa256dd480e0cef1d\$lut for cells of type $lut.
+Using template $paramod$658b9ed803f0d3d335616d3858b53e0a2522f1e8\$lut for cells of type $lut.
+Using template $paramod$571404c0889eaf57f492cb5e37f8acb5df5852f9\$lut for cells of type $lut.
+Using template $paramod\$lut\WIDTH=32'00000000000000000000000000000011\LUT=8'10000000 for cells of type $lut.
+Using template $paramod\$lut\WIDTH=32'00000000000000000000000000000010\LUT=4'1000 for cells of type $lut.
+Using template $paramod$bba54c1ef87367812b4c15f4aed5ac70773df775\$lut for cells of type $lut.
+Using template $paramod\$lut\WIDTH=32'00000000000000000000000000000010\LUT=4'1001 for cells of type $lut.
+Using template $paramod$ba05b8a1a425003df083aea0e69541f5cbdc68f2\$lut for cells of type $lut.
+Using template $paramod\$lut\WIDTH=32'00000000000000000000000000000010\LUT=4'0100 for cells of type $lut.
+Using template $paramod$944c1082b08f2ec62a50b9488a82a7a16d5f72c4\$lut for cells of type $lut.
+Using template $paramod\$lut\WIDTH=32'00000000000000000000000000000010\LUT=4'0001 for cells of type $lut.
+Using template $paramod$e49f6e3576ef1a6d2f58c54414dbb786af8cc869\$lut for cells of type $lut.
+Using template $paramod$a0b565327f0c8836b33a518fb7666d7fc8ba0084\$lut for cells of type $lut.
+Using template $paramod$0bd56cf5130d265bdf3651844aad5160126b46af\$lut for cells of type $lut.
+Using template $paramod$b5fa1520a63363306d2015700d4f6a00f8b76647\$lut for cells of type $lut.
+Using template $paramod$965f8f2fa1a796a6c51222eabb50fbd26e97d98b\$lut for cells of type $lut.
+Using template $paramod\$lut\WIDTH=32'00000000000000000000000000000001\LUT=2'01 for cells of type $lut.
+Using template $paramod$df196ed0a1da5c4a58c5e08a1dac304fd3fccaab\$lut for cells of type $lut.
+Using template $paramod$2d07c1a6c53c7b878509360922c4fa5ebedc3011\$lut for cells of type $lut.
+Using template $paramod\$lut\WIDTH=32'00000000000000000000000000000010\LUT=4'1110 for cells of type $lut.
+Using template $paramod$6b0849254d6c87461fb93e37cc18f089f61eb912\$lut for cells of type $lut.
+Using template $paramod$d4fae2c0d9ad2966369cd4e39b81c71bcd1327c9\$lut for cells of type $lut.
+No more expansions possible.
+<suppressed ~698 debug messages>
+Removed 0 unused cells and 735 unused wires.
+
+5.46. Executing AUTONAME pass.
+Renamed 8352 objects in module TopEntity (30 iterations).
+<suppressed ~831 debug messages>
+
+5.47. Executing HIERARCHY pass (managing design hierarchy).
+
+5.47.1. Analyzing design hierarchy..
+Top module:  \TopEntity
+
+5.47.2. Analyzing design hierarchy..
+Top module:  \TopEntity
+Removed 0 unused modules.
+
+5.48. Printing statistics.
+
+=== TopEntity ===
+
+   Number of wires:                246
+   Number of wire bits:           1040
+   Number of public wires:         246
+   Number of public wire bits:    1040
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:                671
+     SB_CARRY                      139
+     SB_DFF                         16
+     SB_DFFESR                     138
+     SB_DFFR                        34
+     SB_LUT4                       344
+
+5.49. Executing CHECK pass (checking for obvious problems).
+Checking module TopEntity...
+Found and reported 0 problems.
+
+5.50. Executing JSON backend.
+
+End of script. Logfile hash: ef343b89fa, CPU: user 4.55s system 0.14s, MEM: 22.50 MB peak
+Yosys 0.33 (git sha1 2584903a060)
+Time spent: 21% 19x read_verilog (1 sec), 18% 1x abc (1 sec), ...
+[2/7] Placing and routing...
+Warning: Use of default value for --package is deprecated. Please add '--package ct256' to arguments.
+Info: constrained 'clk' to bel 'X16/Y0/io1'
+Warning: unmatched constraint 'led1' (on line 3)
+Warning: unmatched constraint 'led2' (on line 4)
+Warning: unmatched constraint 'led3' (on line 5)
+Info: constrained 'PITCH_DIRA' to bel 'X14/Y33/io1'
+Info: constrained 'PITCH_PWM_VAL' to bel 'X16/Y33/io0'
+Info: constrained 'PITCH_ENC_A' to bel 'X24/Y33/io0'
+Info: constrained 'PITCH_ENC_B' to bel 'X23/Y33/io1'
+Info: constrained 'PITCH_DIRB' to bel 'X13/Y33/io0'
+Warning: unmatched constraint 'pmod1_8' (on line 12)
+Warning: unmatched constraint 'pmod1_9' (on line 13)
+Warning: unmatched constraint 'pmod1_10' (on line 14)
+Info: constrained 'YAW_DIRA' to bel 'X8/Y33/io0'
+Info: constrained 'YAW_PWM_VAL' to bel 'X5/Y33/io1'
+Info: constrained 'YAW_ENC_A' to bel 'X1/Y33/io0'
+Info: constrained 'YAW_ENC_B' to bel 'X6/Y33/io1'
+Info: constrained 'YAW_DIRB' to bel 'X11/Y33/io0'
+Warning: unmatched constraint 'pmod2_8' (on line 21)
+Warning: unmatched constraint 'pmod2_9' (on line 22)
+Warning: unmatched constraint 'pmod2_10' (on line 23)
+Warning: unmatched constraint 'FREE1' (on line 25)
+Warning: unmatched constraint 'FREE3' (on line 26)
+Warning: unmatched constraint 'FREE5' (on line 27)
+Warning: unmatched constraint 'pmod3_4' (on line 28)
+Warning: unmatched constraint 'FREE2' (on line 29)
+Warning: unmatched constraint 'FREE4' (on line 30)
+Warning: unmatched constraint 'pmod3_9' (on line 31)
+Warning: unmatched constraint 'pmod3_10' (on line 32)
+Warning: unmatched constraint 'pmod4_1' (on line 34)
+Warning: unmatched constraint 'pmod4_2' (on line 35)
+Warning: unmatched constraint 'pmod4_3' (on line 36)
+Warning: unmatched constraint 'pmod4_4' (on line 37)
+Warning: unmatched constraint 'pmod4_7' (on line 38)
+Warning: unmatched constraint 'pmod4_8' (on line 39)
+Warning: unmatched constraint 'pmod4_9' (on line 40)
+Warning: unmatched constraint 'pmod4_10' (on line 41)
+Info: constrained 'SPI_POCI' to bel 'X12/Y33/io0'
+Info: constrained 'SPI_PICO' to bel 'X9/Y33/io0'
+Info: constrained 'SPI_CLK' to bel 'X33/Y16/io1'
+Info: constrained 'SPI_CS' to bel 'X2/Y33/io1'
+Info: constrained 'btn1' to bel 'X29/Y0/io0'
+Warning: unmatched constraint 'btn2' (on line 49)
+
+Info: Packing constants..
+Info: Packing IOs..
+Info: Packing LUT-FFs..
+Info:      237 LCs used as LUT4 only
+Info:      107 LCs used as LUT4 and DFF
+Info: Packing non-LUT FFs..
+Info:       81 LCs used as DFF only
+Info: Packing carries..
+Info:       59 LCs used as CARRY only
+Info: Packing indirect carry+LUT pairs...
+Info:       44 LUTs merged into carry LCs
+Info: Packing RAMs..
+Info: Placing PLLs..
+Info: Packing special functions..
+Info: Packing PLLs..
+Info: Promoting globals..
+Info: promoting clk$SB_IO_IN (fanout 188)
+Info: promoting btn1$SB_IO_IN [reset] (fanout 133)
+Info: promoting spi_comm.SPI_CS_active_SB_LUT4_I0_I1[2] [reset] (fanout 38)
+Info: promoting spi_comm.SPI_CLKr_SB_LUT4_I1_O [cen] (fanout 32)
+Info: promoting spi_comm.SPI_CS_active_SB_LUT4_I0_O [cen] (fanout 32)
+Info: promoting spi_comm.tx_shift_SB_DFFESR_Q_30_R_SB_LUT4_I1_O [cen] (fanout 31)
+Info: promoting pitch_decoder.AB_SB_LUT4_I0_1_O_SB_LUT4_I2_O [cen] (fanout 18)
+Info: Constraining chains...
+Info:       13 LCs used to legalise carry chains.
+Info: Checksum: 0x11d5e366
+
+Info: Annotating ports with timing budgets for target frequency 12.00 MHz
+Info: Checksum: 0x84e6ff80
+
+Info: Device utilisation:
+Info: 	         ICESTORM_LC:   455/ 7680     5%
+Info: 	        ICESTORM_RAM:     0/   32     0%
+Info: 	               SB_IO:    16/  256     6%
+Info: 	               SB_GB:     7/    8    87%
+Info: 	        ICESTORM_PLL:     0/    2     0%
+Info: 	         SB_WARMBOOT:     0/    1     0%
+
+Info: Placed 16 cells based on constraints.
+Info: Creating initial analytic placement for 310 cells, random placement wirelen = 12473.
+Info:     at initial placer iter 0, wirelen = 322
+Info:     at initial placer iter 1, wirelen = 275
+Info:     at initial placer iter 2, wirelen = 272
+Info:     at initial placer iter 3, wirelen = 301
+Info: Running main analytical placer, max placement attempts per cell = 28560.
+Info:     at iteration #1, type ICESTORM_LC: wirelen solved = 258, spread = 1236, legal = 1647; time = 0.04s
+Info:     at iteration #1, type SB_GB: wirelen solved = 1621, spread = 1721, legal = 1740; time = 0.01s
+Info:     at iteration #1, type ALL: wirelen solved = 275, spread = 1222, legal = 1939; time = 0.05s
+Info:     at iteration #2, type ICESTORM_LC: wirelen solved = 501, spread = 1573, legal = 1657; time = 0.03s
+Info:     at iteration #2, type SB_GB: wirelen solved = 1569, spread = 1655, legal = 1677; time = 0.01s
+Info:     at iteration #2, type ALL: wirelen solved = 348, spread = 1428, legal = 1626; time = 0.04s
+Info:     at iteration #3, type ICESTORM_LC: wirelen solved = 483, spread = 1322, legal = 1596; time = 0.03s
+Info:     at iteration #3, type SB_GB: wirelen solved = 1530, spread = 1629, legal = 1669; time = 0.01s
+Info:     at iteration #3, type ALL: wirelen solved = 326, spread = 1474, legal = 1678; time = 0.04s
+Info:     at iteration #4, type ICESTORM_LC: wirelen solved = 567, spread = 1205, legal = 1591; time = 0.03s
+Info:     at iteration #4, type SB_GB: wirelen solved = 1485, spread = 1567, legal = 1591; time = 0.01s
+Info:     at iteration #4, type ALL: wirelen solved = 369, spread = 1213, legal = 1772; time = 0.04s
+Info:     at iteration #5, type ICESTORM_LC: wirelen solved = 569, spread = 1406, legal = 1733; time = 0.03s
+Info:     at iteration #5, type SB_GB: wirelen solved = 1636, spread = 1708, legal = 1750; time = 0.01s
+Info:     at iteration #5, type ALL: wirelen solved = 431, spread = 1270, legal = 1595; time = 0.04s
+Info:     at iteration #6, type ICESTORM_LC: wirelen solved = 597, spread = 1418, legal = 1619; time = 0.03s
+Info:     at iteration #6, type SB_GB: wirelen solved = 1498, spread = 1601, legal = 1624; time = 0.01s
+Info:     at iteration #6, type ALL: wirelen solved = 429, spread = 1518, legal = 1659; time = 0.04s
+Info:     at iteration #7, type ICESTORM_LC: wirelen solved = 569, spread = 1281, legal = 1447; time = 0.03s
+Info:     at iteration #7, type SB_GB: wirelen solved = 1362, spread = 1459, legal = 1452; time = 0.01s
+Info:     at iteration #7, type ALL: wirelen solved = 471, spread = 1281, legal = 1592; time = 0.04s
+Info:     at iteration #8, type ICESTORM_LC: wirelen solved = 599, spread = 1333, legal = 1548; time = 0.03s
+Info:     at iteration #8, type SB_GB: wirelen solved = 1459, spread = 1559, legal = 1548; time = 0.01s
+Info:     at iteration #8, type ALL: wirelen solved = 489, spread = 1260, legal = 1455; time = 0.04s
+Info:     at iteration #9, type ICESTORM_LC: wirelen solved = 636, spread = 1231, legal = 1420; time = 0.03s
+Info:     at iteration #9, type SB_GB: wirelen solved = 1338, spread = 1449, legal = 1420; time = 0.01s
+Info:     at iteration #9, type ALL: wirelen solved = 545, spread = 1254, legal = 1460; time = 0.04s
+Info:     at iteration #10, type ICESTORM_LC: wirelen solved = 635, spread = 1285, legal = 1543; time = 0.04s
+Info:     at iteration #10, type SB_GB: wirelen solved = 1464, spread = 1571, legal = 1543; time = 0.02s
+Info:     at iteration #10, type ALL: wirelen solved = 562, spread = 1220, legal = 1645; time = 0.05s
+Info:     at iteration #11, type ICESTORM_LC: wirelen solved = 732, spread = 1255, legal = 1417; time = 0.04s
+Info:     at iteration #11, type SB_GB: wirelen solved = 1293, spread = 1389, legal = 1423; time = 0.02s
+Info:     at iteration #11, type ALL: wirelen solved = 604, spread = 1285, legal = 1779; time = 0.05s
+Info:     at iteration #12, type ICESTORM_LC: wirelen solved = 724, spread = 1328, legal = 1537; time = 0.04s
+Info:     at iteration #12, type SB_GB: wirelen solved = 1413, spread = 1534, legal = 1537; time = 0.02s
+Info:     at iteration #12, type ALL: wirelen solved = 566, spread = 1390, legal = 1708; time = 0.05s
+Info:     at iteration #13, type ICESTORM_LC: wirelen solved = 744, spread = 1287, legal = 1498; time = 0.04s
+Info:     at iteration #13, type SB_GB: wirelen solved = 1380, spread = 1490, legal = 1502; time = 0.02s
+Info:     at iteration #13, type ALL: wirelen solved = 587, spread = 1355, legal = 1591; time = 0.04s
+Info: HeAP Placer Time: 1.50s
+Info:   of which solving equations: 0.96s
+Info:   of which spreading cells: 0.07s
+Info:   of which strict legalisation: 0.18s
+
+Info: Running simulated annealing placer for refinement.
+Info:   at iteration #1: temp = 0.000000, timing cost = 14, wirelen = 1455
+Info:   at iteration #5: temp = 0.000000, timing cost = 13, wirelen = 1216
+Info:   at iteration #10: temp = 0.000000, timing cost = 13, wirelen = 1126
+Info:   at iteration #15: temp = 0.000000, timing cost = 13, wirelen = 1096
+Info:   at iteration #18: temp = 0.000000, timing cost = 10, wirelen = 1075 
+Info: SA placement time 0.98s
+
+Info: Max frequency for clock 'clk$SB_IO_IN_$glb_clk': 93.05 MHz (PASS at 12.00 MHz)
+
+Info: Max delay <async>                       -> posedge clk$SB_IO_IN_$glb_clk: 12.55 ns
+Info: Max delay posedge clk$SB_IO_IN_$glb_clk -> <async>                      : 2.83 ns
+
+Info: Slack histogram:
+Info:  legend: * represents 1 endpoint(s)
+Info:          + represents [1,1) endpoint(s)
+Info: [ 70779,  71354) |***************+
+Info: [ 71354,  71929) |*+
+Info: [ 71929,  72504) |********+
+Info: [ 72504,  73079) |**************************+
+Info: [ 73079,  73654) |*************+
+Info: [ 73654,  74229) |******+
+Info: [ 74229,  74804) |******************+
+Info: [ 74804,  75379) |*************************+
+Info: [ 75379,  75954) |***************+
+Info: [ 75954,  76529) |****************+
+Info: [ 76529,  77104) |*****************************************************+
+Info: [ 77104,  77679) |**********************************************+
+Info: [ 77679,  78254) |*****************************+
+Info: [ 78254,  78829) |***********************************+
+Info: [ 78829,  79404) |**************************+
+Info: [ 79404,  79979) |**************+
+Info: [ 79979,  80554) |***********************+
+Info: [ 80554,  81129) |************************+
+Info: [ 81129,  81704) |******************+
+Info: [ 81704,  82279) |************************************************************ 
+Info: Checksum: 0xe91e7c28
+
+Info: Routing..
+Info: Setting up routing queue.
+Info: Routing 1484 arcs.
+Info:            |   (re-)routed arcs  |   delta    | remaining|       time spent     |
+Info:    IterCnt |  w/ripup   wo/ripup |  w/r  wo/r |      arcs| batch(sec) total(sec)|
+Info:       1000 |       72        804 |   72   804 |       578|       2.75       2.75|
+Info:       1730 |      206       1397 |  134   593 |         0|       0.86       3.61|
+Info: Routing complete.
+Info: Router1 time 3.61s
+Info: Checksum: 0x0b0d7a37
+
+Info: Critical path report for clock 'clk$SB_IO_IN_$glb_clk' (posedge -> posedge):
+Info: curr total
+Info:  0.5  0.5  Source spi_comm.SPI_CLKr_SB_DFF_Q_1_DFFLC.O
+Info:  0.6  1.1    Net spi_comm.SPI_CLKr[1] budget 16.180000 ns (3,19) -> (4,20)
+Info:                Sink spi_comm.SPI_CS_active_SB_LUT4_I3_LC.I1
+Info:                Defined in:
+Info:                  /usr/bin/../share/yosys/ice40/cells_map.v:6.21-6.22
+Info:  0.4  1.5  Source spi_comm.SPI_CS_active_SB_LUT4_I3_LC.O
+Info:  0.6  2.1    Net spi_comm.SPI_CS_active_SB_LUT4_I3_O[2] budget 16.180000 ns (4,20) -> (5,20)
+Info:                Sink spi_comm.tx_shift_SB_DFFESR_Q_30_R_SB_LUT4_O_LC.I2
+Info:                Defined in:
+Info:                  /usr/bin/../share/yosys/ice40/cells_map.v:6.21-6.22
+Info:  0.4  2.5  Source spi_comm.tx_shift_SB_DFFESR_Q_30_R_SB_LUT4_O_LC.O
+Info:  0.6  3.1    Net spi_comm.tx_shift_SB_DFFESR_Q_30_R[0] budget 16.180000 ns (5,20) -> (5,20)
+Info:                Sink spi_comm.tx_shift_SB_DFFESR_Q_30_R_SB_LUT4_I1_LC.I1
+Info:                Defined in:
+Info:                  /usr/bin/../share/yosys/ice40/cells_map.v:6.21-6.22
+Info:  0.4  3.5  Source spi_comm.tx_shift_SB_DFFESR_Q_30_R_SB_LUT4_I1_LC.O
+Info:  2.8  6.2    Net spi_comm.tx_shift_SB_DFFESR_Q_30_R_SB_LUT4_I1_O budget 16.180000 ns (5,20) -> (16,0)
+Info:                Sink $gbuf_spi_comm.tx_shift_SB_DFFESR_Q_30_R_SB_LUT4_I1_O_$glb_ce.USER_SIGNAL_TO_GLOBAL_BUFFER
+Info:  0.6  6.9  Source $gbuf_spi_comm.tx_shift_SB_DFFESR_Q_30_R_SB_LUT4_I1_O_$glb_ce.GLOBAL_BUFFER_OUTPUT
+Info:  0.6  7.5    Net spi_comm.tx_shift_SB_DFFESR_Q_30_R_SB_LUT4_I1_O_$glb_ce budget 16.180000 ns (16,0) -> (3,23)
+Info:                Sink SPI_POCI_SB_DFFESR_Q_D_SB_LUT4_O_LC.CEN
+Info:  0.1  7.6  Setup SPI_POCI_SB_DFFESR_Q_D_SB_LUT4_O_LC.CEN
+Info: 2.4 ns logic, 5.1 ns routing
+
+Info: Critical path report for cross-domain path '<async>' -> 'posedge clk$SB_IO_IN_$glb_clk':
+Info: curr total
+Info:  0.0  0.0  Source btn1$sb_io.D_IN_0
+Info:  3.2  3.2    Net btn1$SB_IO_IN budget 20.476000 ns (29,0) -> (4,20)
+Info:                Sink spi_comm.SPI_CS_active_SB_LUT4_I2_LC.I1
+Info:                Defined in:
+Info:                  TopEntity.v:82.7-91.4
+Info:                  PWM.v:8.24-8.27
+Info:  0.4  3.6  Source spi_comm.SPI_CS_active_SB_LUT4_I2_LC.O
+Info:  0.6  4.2    Net spi_comm.SPI_CS_active_SB_LUT4_I0_I1[2] budget 20.346001 ns (4,20) -> (4,20)
+Info:                Sink spi_comm.SPI_CLKr_SB_LUT4_I1_LC.I3
+Info:                Defined in:
+Info:                  /usr/bin/../share/yosys/ice40/cells_map.v:6.21-6.22
+Info:  0.3  4.5  Source spi_comm.SPI_CLKr_SB_LUT4_I1_LC.O
+Info:  2.8  7.3    Net spi_comm.SPI_CLKr_SB_LUT4_I1_O budget 20.346001 ns (4,20) -> (17,33)
+Info:                Sink $gbuf_spi_comm.SPI_CLKr_SB_LUT4_I1_O_$glb_ce.USER_SIGNAL_TO_GLOBAL_BUFFER
+Info:  0.6  7.9  Source $gbuf_spi_comm.SPI_CLKr_SB_LUT4_I1_O_$glb_ce.GLOBAL_BUFFER_OUTPUT
+Info:  0.6  8.5    Net spi_comm.SPI_CLKr_SB_LUT4_I1_O_$glb_ce budget 20.344999 ns (17,33) -> (4,31)
+Info:                Sink spi_comm.rx_shift_SB_DFFESR_Q_DFFLC.CEN
+Info:  0.1  8.6  Setup spi_comm.rx_shift_SB_DFFESR_Q_DFFLC.CEN
+Info: 1.4 ns logic, 7.1 ns routing
+
+Info: Critical path report for cross-domain path 'posedge clk$SB_IO_IN_$glb_clk' -> '<async>':
+Info: curr total
+Info:  0.5  0.5  Source SPI_POCI_SB_DFFESR_Q_D_SB_LUT4_O_LC.O
+Info:  2.3  2.9    Net SPI_POCI$SB_IO_OUT budget 82.792999 ns (3,23) -> (12,33)
+Info:                Sink SPI_POCI$sb_io.D_OUT_0
+Info:                Defined in:
+Info:                  TopEntity.v:36.7-53.4
+Info:                  SPI.v:57.14-57.22
+Info: 0.5 ns logic, 2.3 ns routing
+
+Info: Max frequency for clock 'clk$SB_IO_IN_$glb_clk': 132.14 MHz (PASS at 12.00 MHz)
+
+Info: Max delay <async>                       -> posedge clk$SB_IO_IN_$glb_clk: 8.58 ns
+Info: Max delay posedge clk$SB_IO_IN_$glb_clk -> <async>                      : 2.87 ns
+
+Info: Slack histogram:
+Info:  legend: * represents 2 endpoint(s)
+Info:          + represents [1,2) endpoint(s)
+Info: [ 74757,  75134) |************+
+Info: [ 75134,  75511) |***********+
+Info: [ 75511,  75888) |***********+
+Info: [ 75888,  76265) |*************+
+Info: [ 76265,  76642) |+
+Info: [ 76642,  77019) |******************+
+Info: [ 77019,  77396) |******+
+Info: [ 77396,  77773) |******************************************************+
+Info: [ 77773,  78150) |***************+
+Info: [ 78150,  78527) |***************+
+Info: [ 78527,  78904) |**********+
+Info: [ 78904,  79281) |***********+
+Info: [ 79281,  79658) |**********************+
+Info: [ 79658,  80035) |*******+
+Info: [ 80035,  80412) |************************************************************ 
+Info: [ 80412,  80789) |***********+
+Info: [ 80789,  81166) |*****************+
+Info: [ 81166,  81543) |**********+
+Info: [ 81543,  81920) |********************************************+
+Info: [ 81920,  82297) |+
+27 warnings, 0 errors
+
+Info: Program finished normally.
+[3/7] Packing bitstream...
+[4/7] Copying bitstream to /home/esl/ws/icoprog...
+[5/7] Programming FPGA...
+[sudo] password for esl: 
+reset..
+cdone: low
+reset..
+cdone: low
+programming..
+cdone: high
+[6/7] Building Raspberry Pi controller...
+cc -I. -Iapp/include -Icontrol/include -Icomm/include -Ivision/include -Icontroller/yaw_controller -Icontroller/pitch_controller -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/aarch64-linux-gnu/glib-2.0/include -I/usr/include/aarch64-linux-gnu -pthread -I/usr/include/orc-0.4  -O2 -Wall -Wextra -std=c11 -pthread -MMD -MP -c -o main.o main.c
+main.c:224:1: fatal error: opening dependency file main.d: Permission denied
+  224 | }
+      | ^
+compilation terminated.
+make: *** [Makefile:46: main.o] Error 1
