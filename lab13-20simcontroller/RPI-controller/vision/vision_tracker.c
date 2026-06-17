@@ -1,6 +1,7 @@
 #include "vision_tracker.h"
 
 #include <errno.h>
+#include <limits.h>
 #include <math.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -18,7 +19,26 @@ typedef struct {
     uint64_t frame_count;
     struct timespec last_frame_time;
     int have_last_frame_time;
+    guint8 *green_mask;
+    int *component_queue;
+    size_t detection_capacity;
+    double filtered_object_x;
+    double filtered_object_y;
+    int have_filtered_object;
+    unsigned lost_frames;
 } VisionPipelineData;
+
+typedef struct {
+    int valid;
+    uint64_t total_green_pixels;
+    uint64_t blob_pixels;
+    int min_x;
+    int min_y;
+    int max_x;
+    int max_y;
+    double object_x;
+    double object_y;
+} VisionBlobDetection;
 
 static long timespec_diff_us(struct timespec end, struct timespec start)
 {
@@ -54,6 +74,222 @@ static gboolean is_green_pixel(guint8 r, guint8 g, guint8 b)
            whiteness_percent <= JIWY_VISION_GREEN_MAX_WHITENESS_PERCENT &&
            blackness_percent >= JIWY_VISION_GREEN_MIN_BLACKNESS_PERCENT &&
            blackness_percent <= JIWY_VISION_GREEN_MAX_BLACKNESS_PERCENT;
+}
+
+static int ensure_detection_buffers(VisionPipelineData *data,
+                                    size_t pixel_count)
+{
+    guint8 *new_mask;
+    int *new_queue;
+
+    if (pixel_count > (size_t)INT_MAX) {
+        return -EOVERFLOW;
+    }
+    if (data->detection_capacity >= pixel_count) {
+        return 0;
+    }
+
+    new_mask = (guint8 *)malloc(pixel_count);
+    new_queue = (int *)malloc(pixel_count * sizeof(*new_queue));
+    if (new_mask == NULL || new_queue == NULL) {
+        free(new_mask);
+        free(new_queue);
+        return -ENOMEM;
+    }
+
+    free(data->green_mask);
+    free(data->component_queue);
+    data->green_mask = new_mask;
+    data->component_queue = new_queue;
+    data->detection_capacity = pixel_count;
+
+    return 0;
+}
+
+static gboolean blob_shape_is_valid(uint64_t pixels,
+                                    int min_x,
+                                    int min_y,
+                                    int max_x,
+                                    int max_y)
+{
+    int width = max_x - min_x + 1;
+    int height = max_y - min_y + 1;
+    int min_side = MIN(width, height);
+    int max_side = MAX(width, height);
+    uint64_t box_area = (uint64_t)width * (uint64_t)height;
+
+    if (pixels < JIWY_VISION_MIN_GREEN_PIXELS ||
+        width < JIWY_VISION_BLOB_MIN_WIDTH ||
+        height < JIWY_VISION_BLOB_MIN_HEIGHT ||
+        min_side <= 0) {
+        return FALSE;
+    }
+
+    if (max_side * 100 > min_side * JIWY_VISION_BLOB_MAX_ASPECT_PERCENT) {
+        return FALSE;
+    }
+
+    return pixels * 100 >=
+        box_area * (uint64_t)JIWY_VISION_BLOB_MIN_FILL_PERCENT;
+}
+
+static void find_green_blob(VisionPipelineData *data,
+                            const guint8 *rgb,
+                            int width,
+                            int height,
+                            int stride,
+                            VisionBlobDetection *detection)
+{
+    gboolean tracking_locked =
+        data->have_filtered_object &&
+        data->lost_frames < JIWY_VISION_TRACK_RESET_LOST_FRAMES;
+    double best_score = -HUGE_VAL;
+
+    memset(detection, 0, sizeof(*detection));
+
+    for (int y = 0; y < height; ++y) {
+        const guint8 *row = rgb + y * stride;
+        size_t row_offset = (size_t)y * (size_t)width;
+
+        for (int x = 0; x < width; ++x) {
+            const guint8 *pixel = row + x * 3;
+            size_t index = row_offset + (size_t)x;
+
+            if (is_green_pixel(pixel[0], pixel[1], pixel[2])) {
+                data->green_mask[index] = 1;
+                ++detection->total_green_pixels;
+            } else {
+                data->green_mask[index] = 0;
+            }
+        }
+    }
+
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            int start_index = y * width + x;
+            int head = 0;
+            int tail = 0;
+            uint64_t pixels = 0;
+            uint64_t sum_x = 0;
+            uint64_t sum_y = 0;
+            int min_x = width;
+            int min_y = height;
+            int max_x = 0;
+            int max_y = 0;
+            double object_x;
+            double object_y;
+            double score;
+
+            if (data->green_mask[start_index] == 0) {
+                continue;
+            }
+
+            data->green_mask[start_index] = 0;
+            data->component_queue[tail++] = start_index;
+
+            while (head < tail) {
+                int pixel_index = data->component_queue[head++];
+                int pixel_x = pixel_index % width;
+                int pixel_y = pixel_index / width;
+
+                ++pixels;
+                sum_x += (uint64_t)pixel_x;
+                sum_y += (uint64_t)pixel_y;
+                min_x = MIN(min_x, pixel_x);
+                min_y = MIN(min_y, pixel_y);
+                max_x = MAX(max_x, pixel_x);
+                max_y = MAX(max_y, pixel_y);
+
+                if (pixel_x > 0 &&
+                    data->green_mask[pixel_index - 1] != 0) {
+                    data->green_mask[pixel_index - 1] = 0;
+                    data->component_queue[tail++] = pixel_index - 1;
+                }
+                if (pixel_x + 1 < width &&
+                    data->green_mask[pixel_index + 1] != 0) {
+                    data->green_mask[pixel_index + 1] = 0;
+                    data->component_queue[tail++] = pixel_index + 1;
+                }
+                if (pixel_y > 0 &&
+                    data->green_mask[pixel_index - width] != 0) {
+                    data->green_mask[pixel_index - width] = 0;
+                    data->component_queue[tail++] = pixel_index - width;
+                }
+                if (pixel_y + 1 < height &&
+                    data->green_mask[pixel_index + width] != 0) {
+                    data->green_mask[pixel_index + width] = 0;
+                    data->component_queue[tail++] = pixel_index + width;
+                }
+            }
+
+            if (!blob_shape_is_valid(pixels, min_x, min_y, max_x, max_y)) {
+                continue;
+            }
+
+            object_x = (double)sum_x / (double)pixels;
+            object_y = (double)sum_y / (double)pixels;
+            score = (double)pixels;
+
+            if (tracking_locked) {
+                double dx = object_x - data->filtered_object_x;
+                double dy = object_y - data->filtered_object_y;
+                double distance = sqrt(dx * dx + dy * dy);
+
+                if (distance > JIWY_VISION_TRACK_MAX_JUMP_PIXELS) {
+                    continue;
+                }
+
+                score -= distance * distance * 0.25;
+            }
+
+            if (!detection->valid || score > best_score) {
+                detection->valid = 1;
+                detection->blob_pixels = pixels;
+                detection->min_x = min_x;
+                detection->min_y = min_y;
+                detection->max_x = max_x;
+                detection->max_y = max_y;
+                detection->object_x = object_x;
+                detection->object_y = object_y;
+                best_score = score;
+            }
+        }
+    }
+}
+
+static void smooth_blob_detection(VisionPipelineData *data,
+                                  VisionBlobDetection *detection)
+{
+    double alpha = JIWY_VISION_TRACK_SMOOTHING_ALPHA;
+
+    if (!detection->valid) {
+        ++data->lost_frames;
+        if (data->lost_frames >= JIWY_VISION_TRACK_RESET_LOST_FRAMES) {
+            data->have_filtered_object = 0;
+        }
+        return;
+    }
+
+    if (alpha < 0.0) {
+        alpha = 0.0;
+    } else if (alpha > 1.0) {
+        alpha = 1.0;
+    }
+
+    if (!data->have_filtered_object) {
+        data->filtered_object_x = detection->object_x;
+        data->filtered_object_y = detection->object_y;
+        data->have_filtered_object = 1;
+    } else {
+        data->filtered_object_x +=
+            alpha * (detection->object_x - data->filtered_object_x);
+        data->filtered_object_y +=
+            alpha * (detection->object_y - data->filtered_object_y);
+    }
+
+    detection->object_x = data->filtered_object_x;
+    detection->object_y = data->filtered_object_y;
+    data->lost_frames = 0;
 }
 
 
@@ -420,9 +656,8 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
     int width;
     int height;
     int stride;
-    uint64_t green_pixels = 0;
-    uint64_t sum_x = 0;
-    uint64_t sum_y = 0;
+    size_t pixel_count;
+    VisionBlobDetection detection;
     int marker_valid = 0;
     int marker_x = 0;
     int marker_y = 0;
@@ -462,6 +697,14 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
     height = GST_VIDEO_INFO_HEIGHT(&info);
     stride = GST_VIDEO_INFO_PLANE_STRIDE(&info, 0);
 
+    if (width <= 0 || height <= 0 ||
+        (size_t)height > (size_t)INT_MAX / (size_t)width) {
+        fprintf(stderr, "Vision tracker got invalid frame dimensions\n");
+        gst_sample_unref(sample);
+        return GST_FLOW_ERROR;
+    }
+    pixel_count = (size_t)width * (size_t)height;
+
     if (stride <= 0 || !gst_buffer_map(buffer, &map, GST_MAP_READ)) {
         gst_sample_unref(sample);
         return GST_FLOW_ERROR;
@@ -475,19 +718,14 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
         return GST_FLOW_ERROR;
     }
 
-    for (int y = 0; y < height; ++y) {
-        const guint8 *row = map.data + y * stride;
-
-        for (int x = 0; x < width; ++x) {
-            const guint8 *pixel = row + x * 3;
-
-            if (is_green_pixel(pixel[0], pixel[1], pixel[2])) {
-                ++green_pixels;
-                sum_x += (uint64_t)x;
-                sum_y += (uint64_t)y;
-            }
-        }
+    if (ensure_detection_buffers(data, pixel_count) < 0) {
+        gst_buffer_unmap(buffer, &map);
+        gst_sample_unref(sample);
+        return GST_FLOW_ERROR;
     }
+
+    find_green_blob(data, map.data, width, height, stride, &detection);
+    smooth_blob_detection(data, &detection);
 
     memset(&snapshot, 0, sizeof(snapshot));
     snapshot.frame_count = data->frame_count;
@@ -497,16 +735,13 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
     }
     snapshot.frame_interval_ms = frame_interval_ms;
 
-    if (green_pixels >= JIWY_VISION_MIN_GREEN_PIXELS) {
-        double object_x = (double)sum_x / (double)green_pixels;
-        double object_y = (double)sum_y / (double)green_pixels;
-
+    if (detection.valid) {
         snapshot.valid = 1;
         marker_valid = 1;
-        marker_x = (int)(object_x + 0.5);
-        marker_y = (int)(object_y + 0.5);
-        pixel_to_camera_error(object_x,
-                              object_y,
+        marker_x = (int)(detection.object_x + 0.5);
+        marker_y = (int)(detection.object_y + 0.5);
+        pixel_to_camera_error(detection.object_x,
+                              detection.object_y,
                               width,
                               height,
                               &snapshot.yaw_error_rad,
@@ -544,21 +779,26 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
         data->frame_count % JIWY_VISION_DEBUG_EVERY_FRAMES == 0) {
         if (snapshot.valid) {
             printf("vision frame=%" G_GUINT64_FORMAT
-                   " yaw_err=%.4f pitch_err=%.4f pixels=%" G_GUINT64_FORMAT
+                   " yaw_err=%.4f pitch_err=%.4f blob=%" G_GUINT64_FORMAT
+                   " green=%" G_GUINT64_FORMAT
+                   " box=%dx%d"
                    " dt=%.2fms proc=%.0fus late=%d\n",
                    (guint64)data->frame_count,
                    snapshot.yaw_error_rad,
                    snapshot.pitch_error_rad,
-                   (guint64)green_pixels,
+                   (guint64)detection.blob_pixels,
+                   (guint64)detection.total_green_pixels,
+                   detection.max_x - detection.min_x + 1,
+                   detection.max_y - detection.min_y + 1,
                    snapshot.frame_interval_ms,
                    snapshot.process_us,
                    snapshot.late_frame);
         } else {
             printf("vision frame=%" G_GUINT64_FORMAT
-                   " no green object pixels=%" G_GUINT64_FORMAT
+                   " no green blob green=%" G_GUINT64_FORMAT
                    " dt=%.2fms proc=%.0fus late=%d\n",
                    (guint64)data->frame_count,
-                   (guint64)green_pixels,
+                   (guint64)detection.total_green_pixels,
                    snapshot.frame_interval_ms,
                    snapshot.process_us,
                    snapshot.late_frame);
@@ -758,6 +998,8 @@ static void *vision_thread_main(void *arg)
     tracker->loop = NULL;
     tracker->pipeline = NULL;
     gst_object_unref(pipeline);
+    free(data.green_mask);
+    free(data.component_queue);
 
     return NULL;
 }

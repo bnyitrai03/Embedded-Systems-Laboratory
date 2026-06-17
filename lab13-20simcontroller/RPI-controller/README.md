@@ -135,9 +135,12 @@ through GStreamer:
 v4l2src -> image/jpeg caps -> jpegdec -> videoconvert -> videoscale -> RGB -> appsink
 ```
 
-The tracker scans RGB pixels for green, averages the green pixel coordinates,
-and converts the centroid to camera error using a fixed 60 degree field of
-view. The units are pixels until the final multiply by radians:
+The tracker scans RGB pixels into a green mask, finds connected green blobs,
+rejects small or thin blobs, and tracks the selected blob center with a short
+exponential smoother. This keeps stray green lights or reflections from pulling
+the target away from the ball. The filtered blob center is then converted to
+camera error using a fixed 60 degree field of view. The units are pixels until
+the final multiply by radians:
 
 ```c
 yaw_error_rad =
