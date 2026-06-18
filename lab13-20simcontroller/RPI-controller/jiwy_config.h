@@ -57,7 +57,7 @@
  * small green noise is still accepted as the ball. Decrease it if the real ball
  * is far away or partly hidden and disappears.
  */
-#define JIWY_VISION_MIN_GREEN_PIXELS 150
+#define JIWY_VISION_MIN_GREEN_PIXELS 100
 
 /*
  * Minimum selected blob dimensions. Increase to ignore thin reflections or
@@ -71,7 +71,7 @@
  * reject sparse speckles. Decrease it if shadows/highlights make the ball mask
  * hollow or incomplete.
  */
-#define JIWY_VISION_BLOB_MIN_FILL_PERCENT 25
+#define JIWY_VISION_BLOB_MIN_FILL_PERCENT 40
 
 /*
  * Maximum width/height ratio in percent. 220 accepts moderately elliptical
@@ -102,7 +102,7 @@
  * validating signs and FOV: 0.25 means command only 25% of the measured camera
  * angle. Increase toward 1.0 after the robot moves correctly but too slowly.
  */
-#define JIWY_VISION_TARGET_GAIN 0.25
+#define JIWY_VISION_TARGET_GAIN 1
 
 /*
  * Logitech C270 is commonly advertised as 60 deg diagonal. For a 4:3 640x480
@@ -125,7 +125,7 @@
  * Publish only every Nth camera frame to the browser debug stream. With a
  * 30 fps camera, 6 gives about 5 fps and keeps HTTP debug work cheap.
  */
-#define JIWY_VISION_STREAM_FPS_DIVISOR 3
+#define JIWY_VISION_STREAM_FPS_DIVISOR 1
 #define JIWY_VISION_DEBUG_EVERY_FRAMES 30
 
 /*
@@ -139,7 +139,7 @@
  * are muted by lighting or camera exposure.
  */
 #define JIWY_VISION_GREEN_MIN_CHANNEL 20
-#define JIWY_VISION_GREEN_MIN_DELTA 12
+#define JIWY_VISION_GREEN_MIN_DELTA 35
 
 /*
  * Whiteness is min(R,G,B) as percent of 255. Low values allow saturated colors;
@@ -162,8 +162,8 @@
  * Hue window in degrees around green. Widen if the ball changes color with
  * lighting; narrow if yellow/cyan background objects are selected.
  */
-#define HUE_LOWER_LIMIT 80
-#define HUE_UPPER_LIMIT 180
+#define HUE_LOWER_LIMIT 95
+#define HUE_UPPER_LIMIT 165
 
 /*
  * Physical angular travel between the two mechanical stops.
