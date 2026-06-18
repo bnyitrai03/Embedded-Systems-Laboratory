@@ -95,7 +95,7 @@
  * Control-loop samples to keep using the last valid camera frame before
  * holding current position. At 5 ms control period, 25 samples is 125 ms.
  */
-#define JIWY_VISION_MAX_STALE_CONTROL_SAMPLES 25u
+#define JIWY_VISION_MAX_STALE_CONTROL_SAMPLES 6u
 
 /*
  * Scale camera error before creating the robot setpoint. Keep this small while
@@ -111,7 +111,7 @@
  * Decrease them if it over-rotates.
  */
 #define JIWY_VISION_HORIZONTAL_FOV_RAD (49.6 * JIWY_PI / 180.0)
-#define JIWY_VISION_VERTICAL_FOV_RAD   (39.7 * JIWY_PI / 180.0)
+#define JIWY_VISION_VERTICAL_FOV_RAD   (30.0 * JIWY_PI / 180.0)
 
 /*
  * Camera-error deadband. Errors smaller than this become zero so the robot does
