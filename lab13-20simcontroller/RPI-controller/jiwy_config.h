@@ -83,7 +83,7 @@
  * Exponential smoothing alpha for the chosen blob center. Larger follows fast
  * motion more closely but is noisier. Smaller is steadier but lags the ball.
  */
-#define JIWY_VISION_TRACK_SMOOTHING_ALPHA 0.70
+#define JIWY_VISION_TRACK_SMOOTHING_ALPHA 0.60
 
 /*
  * If lock-to-previous is enabled in code, reject sudden blob jumps larger than
@@ -96,7 +96,7 @@
  * validating signs and FOV: 0.25 means command only 25% of the measured camera
  * angle. Increase toward 1.0 after the robot moves correctly but too slowly.
  */
-#define JIWY_VISION_TARGET_GAIN 0.25
+#define JIWY_VISION_TARGET_GAIN 1.0
 
 /*
  * Logitech C270 is commonly advertised as 60 deg diagonal. For a 4:3 640x480
@@ -104,7 +104,7 @@
  * Increase these if the robot under-rotates for a measured pixel offset.
  * Decrease them if it over-rotates.
  */
-#define JIWY_VISION_HORIZONTAL_FOV_RAD (49.6 * JIWY_PI / 180.0)
+#define JIWY_VISION_HORIZONTAL_FOV_RAD (40.0 * JIWY_PI / 180.0)
 #define JIWY_VISION_VERTICAL_FOV_RAD   (30.0 * JIWY_PI / 180.0)
 
 /*
@@ -112,8 +112,8 @@
  * not twitch when the ball is visually centered. Increase if it still hunts at
  * center. Decrease if it stops before the ball is centered accurately enough.
  */
-#define JIWY_VISION_YAW_DEADBAND_RAD   0.01
-#define JIWY_VISION_PITCH_DEADBAND_RAD 0.01
+#define JIWY_VISION_YAW_DEADBAND_RAD   0.0
+#define JIWY_VISION_PITCH_DEADBAND_RAD 0.06
 
 /*
  * Publish only every Nth camera frame to the browser debug stream. With a
@@ -156,8 +156,8 @@
  * Hue window in degrees around green. Widen if the ball changes color with
  * lighting; narrow if yellow/cyan background objects are selected.
  */
-#define HUE_LOWER_LIMIT 95
-#define HUE_UPPER_LIMIT 165
+#define HUE_LOWER_LIMIT 100
+#define HUE_UPPER_LIMIT 180
 
 /*
  * Physical angular travel between the two mechanical stops.
