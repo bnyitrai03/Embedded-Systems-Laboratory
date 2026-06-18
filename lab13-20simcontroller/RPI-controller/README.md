@@ -178,10 +178,9 @@ target = current encoder angle + JIWY_VISION_TARGET_GAIN * camera error
 ```
 
 That absolute target is reused until the next camera frame. If no ball is
-detected, the setpoint is the current encoder angle, so the robot stops chasing
-stale camera data. The same hold-current behavior is used if the latest valid
-camera frame is not refreshed for
-`JIWY_VISION_MAX_STALE_CONTROL_SAMPLES` control samples.
+detected yet, the setpoint stays at the configured center of the yaw/pitch
+travel. After the first detection, losing the ball keeps the last valid target
+until a new valid camera frame updates it.
 
 # PID CSV logging
 

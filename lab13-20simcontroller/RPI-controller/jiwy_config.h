@@ -92,12 +92,6 @@
 #define JIWY_VISION_TRACK_MAX_JUMP_PIXELS 200.0
 #define JIWY_VISION_TRACK_RESET_LOST_FRAMES 10u
 /*
- * Control-loop samples to keep using the last valid camera frame before
- * holding current position. At 5 ms control period, 25 samples is 125 ms.
- */
-#define JIWY_VISION_MAX_STALE_CONTROL_SAMPLES 6u
-
-/*
  * Scale camera error before creating the robot setpoint. Keep this small while
  * validating signs and FOV: 0.25 means command only 25% of the measured camera
  * angle. Increase toward 1.0 after the robot moves correctly but too slowly.

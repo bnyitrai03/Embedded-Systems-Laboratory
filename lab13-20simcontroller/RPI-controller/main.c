@@ -153,9 +153,9 @@ int main(int argc, char *argv[])
 
         if (run_track_loop) {
             initial_target.yaw_target_rad =
-                jiwy_yaw_rad(&calibration, initial_encoders.yaw);
+                (calibration.yaw_min_rad + calibration.yaw_max_rad) / 2.0;
             initial_target.pitch_target_rad =
-                jiwy_pitch_rad(&calibration, initial_encoders.pitch);
+                (calibration.pitch_min_rad + calibration.pitch_max_rad) / 2.0;
 
             vision_tracker_init(&vision_tracker);
             result = vision_tracker_start(&vision_tracker,
