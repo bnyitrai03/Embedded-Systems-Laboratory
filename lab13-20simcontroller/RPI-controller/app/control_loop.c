@@ -249,9 +249,13 @@ int control_loop_run(MotorComm *comm,
                     last_vision_frame_count = vision_snapshot.frame_count;
                     have_vision_frame_count = 1;
                     active_vision_target.yaw_target_rad =
-                        yaw_actual_rad + vision_snapshot.yaw_error_rad;
+                        yaw_actual_rad +
+                        JIWY_VISION_TARGET_GAIN *
+                        vision_snapshot.yaw_error_rad;
                     active_vision_target.pitch_target_rad =
-                        pitch_actual_rad + vision_snapshot.pitch_error_rad;
+                        pitch_actual_rad +
+                        JIWY_VISION_TARGET_GAIN *
+                        vision_snapshot.pitch_error_rad;
                     have_active_vision_target = 1;
                 } else if (stale_vision_samples <=
                            JIWY_VISION_MAX_STALE_CONTROL_SAMPLES) {

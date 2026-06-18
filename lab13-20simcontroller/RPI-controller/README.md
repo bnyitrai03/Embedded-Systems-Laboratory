@@ -174,7 +174,7 @@ The configured control loop reads the latest camera result each sample. When a
 new valid camera frame arrives, the setpoint is:
 
 ```text
-target = current encoder angle + camera error
+target = current encoder angle + JIWY_VISION_TARGET_GAIN * camera error
 ```
 
 That absolute target is reused until the next camera frame. If no ball is
