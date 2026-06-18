@@ -38,6 +38,101 @@ static long timespec_diff_us(struct timespec end, struct timespec start)
     return (long)sec * 1000000L + nsec / 1000L;
 }
 
+static uint64_t timespec_to_ns(struct timespec ts)
+{
+    return (uint64_t)ts.tv_sec * 1000000000ull + (uint64_t)ts.tv_nsec;
+}
+
+typedef struct {
+    uint64_t monotonic_ns;
+    double yaw_rad;
+    double pitch_rad;
+} EncoderHistorySample;
+
+static void encoder_history_push(EncoderHistorySample *ring,
+                                 unsigned capacity,
+                                 unsigned *head,
+                                 unsigned *count,
+                                 uint64_t ns,
+                                 double yaw_rad,
+                                 double pitch_rad)
+{
+    ring[*head].monotonic_ns = ns;
+    ring[*head].yaw_rad = yaw_rad;
+    ring[*head].pitch_rad = pitch_rad;
+    *head = (*head + 1u) % capacity;
+    if (*count < capacity) {
+        ++*count;
+    }
+}
+
+/*
+ * Look up the camera angle at a given monotonic timestamp by linear
+ * interpolation between the two nearest history samples. Returns 0 on success,
+ * -1 if the history is empty. If ns is older than the oldest sample, the oldest
+ * sample is returned; if newer than the newest, the newest is returned.
+ */
+static int encoder_history_lookup(const EncoderHistorySample *ring,
+                                  unsigned capacity,
+                                  unsigned head,
+                                  unsigned count,
+                                  uint64_t ns,
+                                  double *yaw_rad,
+                                  double *pitch_rad)
+{
+    unsigned newest_index;
+    unsigned oldest_index;
+    unsigned i;
+    const EncoderHistorySample *newest;
+    const EncoderHistorySample *oldest;
+
+    if (count == 0) {
+        return -1;
+    }
+
+    newest_index = (head + capacity - 1u) % capacity;
+    oldest_index = (head + capacity - count) % capacity;
+    newest = &ring[newest_index];
+    oldest = &ring[oldest_index];
+
+    if (ns <= oldest->monotonic_ns) {
+        *yaw_rad = oldest->yaw_rad;
+        *pitch_rad = oldest->pitch_rad;
+        return 0;
+    }
+    if (ns >= newest->monotonic_ns) {
+        *yaw_rad = newest->yaw_rad;
+        *pitch_rad = newest->pitch_rad;
+        return 0;
+    }
+
+    for (i = 0; i + 1u < count; ++i) {
+        unsigned idx_a = (oldest_index + i) % capacity;
+        unsigned idx_b = (oldest_index + i + 1u) % capacity;
+        const EncoderHistorySample *a = &ring[idx_a];
+        const EncoderHistorySample *b = &ring[idx_b];
+        uint64_t span;
+        double frac;
+
+        if (ns < a->monotonic_ns || ns > b->monotonic_ns) {
+            continue;
+        }
+
+        span = b->monotonic_ns - a->monotonic_ns;
+        frac = 0.0;
+        if (span > 0u) {
+            frac = (double)(ns - a->monotonic_ns) / (double)span;
+        }
+        *yaw_rad = a->yaw_rad + frac * (b->yaw_rad - a->yaw_rad);
+        *pitch_rad = a->pitch_rad + frac * (b->pitch_rad - a->pitch_rad);
+        return 0;
+    }
+
+    *yaw_rad = newest->yaw_rad;
+    *pitch_rad = newest->pitch_rad;
+    return 0;
+}
+
 static ControlTarget hold_schedule_target_at(const HoldSchedule *schedule,
                                              double elapsed_s,
                                              int *phase_out)
@@ -133,8 +228,17 @@ int control_loop_run(MotorComm *comm,
     uint64_t last_vision_frame_count = 0;
     unsigned stale_vision_samples = JIWY_VISION_MAX_STALE_CONTROL_SAMPLES + 1u;
     int have_vision_frame_count = 0;
-    ControlTarget active_vision_target = target;
-    int have_active_vision_target = 0;
+    EncoderHistorySample encoder_history[JIWY_CONTROL_ENCODER_HISTORY_SAMPLES];
+    unsigned encoder_history_head = 0;
+    unsigned encoder_history_count = 0;
+    double est_ball_yaw_world = 0.0;
+    double est_ball_pitch_world = 0.0;
+    int have_est = 0;
+    double ball_vel_yaw_rad_per_s = 0.0;
+    double ball_vel_pitch_rad_per_s = 0.0;
+    double ramped_yaw_target_rad = 0.0;
+    double ramped_pitch_target_rad = 0.0;
+    int have_ramped_target = 0;
     int result;
 
     result = clock_gettime(CLOCK_MONOTONIC, &next_deadline);
@@ -161,7 +265,11 @@ int control_loop_run(MotorComm *comm,
                 "work_us,lateness_us,overruns,"
                 "target_source,hold_phase,"
                 "spi_exchange_us,control_compute_us,"
-                "vision_frame_interval_ms,vision_process_us,vision_late_frame\n");
+                "vision_frame_interval_ms,vision_process_us,vision_late_frame,"
+                "est_ball_yaw,est_ball_pitch,"
+                "ramped_yaw,ramped_pitch,"
+                "ball_vel_yaw,ball_vel_pitch,"
+                "captured_age_ms,vision_lost\n");
     }
 
     /*
@@ -183,6 +291,7 @@ int control_loop_run(MotorComm *comm,
         long control_compute_us;
         long work_us;
         long lateness_us;
+        int vision_lost = 0;
 
         memset(&vision_snapshot, 0, sizeof(vision_snapshot));
 
@@ -228,6 +337,14 @@ int control_loop_run(MotorComm *comm,
         yaw_actual_rad = jiwy_yaw_rad(calibration, encoders.yaw);
         pitch_actual_rad = jiwy_pitch_rad(calibration, encoders.pitch);
 
+        encoder_history_push(encoder_history,
+                             JIWY_CONTROL_ENCODER_HISTORY_SAMPLES,
+                             &encoder_history_head,
+                             &encoder_history_count,
+                             timespec_to_ns(work_start),
+                             yaw_actual_rad,
+                             pitch_actual_rad);
+
         if (hold_schedule != 0) {
             double elapsed_s =
                 (double)timespec_diff_us(work_start, loop_start) / 1000000.0;
@@ -236,6 +353,8 @@ int control_loop_run(MotorComm *comm,
         }
 
         if (vision_tracker != 0) {
+            double dt_s = (double)config->sample_period_us / 1000000.0;
+
             target.yaw_target_rad = yaw_actual_rad;
             target.pitch_target_rad = pitch_actual_rad;
             target_source = TARGET_SOURCE_FIXED;
@@ -245,14 +364,97 @@ int control_loop_run(MotorComm *comm,
                 vision_snapshot.valid) {
                 if (!have_vision_frame_count ||
                     vision_snapshot.frame_count != last_vision_frame_count) {
+                    double camera_yaw_at_capture;
+                    double camera_pitch_at_capture;
+                    double measured_yaw_world;
+                    double measured_pitch_world;
+                    double yaw_diff = 0.0;
+                    double pitch_diff = 0.0;
+                    int update_estimate;
+
                     stale_vision_samples = 0;
                     last_vision_frame_count = vision_snapshot.frame_count;
                     have_vision_frame_count = 1;
-                    active_vision_target.yaw_target_rad =
-                        yaw_actual_rad + vision_snapshot.yaw_error_rad;
-                    active_vision_target.pitch_target_rad =
-                        pitch_actual_rad + vision_snapshot.pitch_error_rad;
-                    have_active_vision_target = 1;
+
+                    /*
+                     * Latency correction: build the ball world angle from the
+                     * camera angle at the instant the frame was captured, not
+                     * the current camera angle. This decouples the setpoint
+                     * from camera motion and removes the positive feedback
+                     * that caused the oscillation.
+                     */
+                    if (encoder_history_lookup(encoder_history,
+                                               JIWY_CONTROL_ENCODER_HISTORY_SAMPLES,
+                                               encoder_history_head,
+                                               encoder_history_count,
+                                               vision_snapshot.captured_monotonic_ns,
+                                               &camera_yaw_at_capture,
+                                               &camera_pitch_at_capture) == 0) {
+                        measured_yaw_world =
+                            camera_yaw_at_capture + vision_snapshot.yaw_error_rad;
+                        measured_pitch_world =
+                            camera_pitch_at_capture + vision_snapshot.pitch_error_rad;
+                    } else {
+                        measured_yaw_world =
+                            yaw_actual_rad + vision_snapshot.yaw_error_rad;
+                        measured_pitch_world =
+                            pitch_actual_rad + vision_snapshot.pitch_error_rad;
+                    }
+
+                    /*
+                     * Deadband gate at the estimate update: only fold in the
+                     * new measurement when it moves the estimate beyond the
+                     * deadband. This kills the centered-ball limit cycle at
+                     * the source instead of relying on the PID to damp it.
+                     */
+                    if (have_est) {
+                        yaw_diff = measured_yaw_world - est_ball_yaw_world;
+                        pitch_diff = measured_pitch_world - est_ball_pitch_world;
+                        update_estimate =
+                            fabs(yaw_diff) > JIWY_VISION_YAW_DEADBAND_RAD ||
+                            fabs(pitch_diff) > JIWY_VISION_PITCH_DEADBAND_RAD;
+                    } else {
+                        update_estimate = 1;
+                    }
+
+                    if (update_estimate) {
+                        if (!have_est) {
+                            est_ball_yaw_world = measured_yaw_world;
+                            est_ball_pitch_world = measured_pitch_world;
+                            ball_vel_yaw_rad_per_s = 0.0;
+                            ball_vel_pitch_rad_per_s = 0.0;
+                        } else {
+                            double prev_yaw = est_ball_yaw_world;
+                            double prev_pitch = est_ball_pitch_world;
+                            double alpha = JIWY_VISION_WORLD_FILTER_ALPHA;
+                            double frame_dt_s;
+
+                            if (alpha < 0.0) {
+                                alpha = 0.0;
+                            } else if (alpha > 1.0) {
+                                alpha = 1.0;
+                            }
+
+                            est_ball_yaw_world +=
+                                alpha * (measured_yaw_world - est_ball_yaw_world);
+                            est_ball_pitch_world +=
+                                alpha * (measured_pitch_world - est_ball_pitch_world);
+
+                            frame_dt_s =
+                                vision_snapshot.frame_interval_ms / 1000.0;
+                            if (frame_dt_s < 1e-3) {
+                                frame_dt_s = 1e-3;
+                            }
+                            ball_vel_yaw_rad_per_s =
+                                (est_ball_yaw_world - prev_yaw) / frame_dt_s;
+                            ball_vel_pitch_rad_per_s =
+                                (est_ball_pitch_world - prev_pitch) / frame_dt_s;
+                        }
+                        have_est = 1;
+                    } else {
+                        ball_vel_yaw_rad_per_s *= 0.5;
+                        ball_vel_pitch_rad_per_s *= 0.5;
+                    }
                 } else if (stale_vision_samples <=
                            JIWY_VISION_MAX_STALE_CONTROL_SAMPLES) {
                     ++stale_vision_samples;
@@ -260,12 +462,61 @@ int control_loop_run(MotorComm *comm,
             } else {
                 stale_vision_samples =
                     JIWY_VISION_MAX_STALE_CONTROL_SAMPLES + 1u;
-                have_active_vision_target = 0;
+                /*
+                 * Keep the last world estimate (freeze where the ball was), but
+                 * decay any stale velocity so feedforward does not push the
+                 * setpoint while the ball is lost.
+                 */
+                ball_vel_yaw_rad_per_s *= 0.5;
+                ball_vel_pitch_rad_per_s *= 0.5;
             }
 
-            if (have_active_vision_target &&
-                stale_vision_samples <= JIWY_VISION_MAX_STALE_CONTROL_SAMPLES) {
-                target = active_vision_target;
+            vision_lost = (stale_vision_samples >
+                           JIWY_VISION_MAX_STALE_CONTROL_SAMPLES) || !have_est;
+
+            if (have_est && !vision_lost) {
+                double desired_yaw =
+                    est_ball_yaw_world +
+                    JIWY_VISION_FEEDFORWARD_GAIN_YAW * ball_vel_yaw_rad_per_s;
+                double desired_pitch =
+                    est_ball_pitch_world +
+                    JIWY_VISION_FEEDFORWARD_GAIN_PITCH * ball_vel_pitch_rad_per_s;
+                double max_step =
+                    JIWY_VISION_SETPOINT_MAX_RATE_RAD_PER_S * dt_s;
+
+                if (!have_ramped_target) {
+                    ramped_yaw_target_rad = desired_yaw;
+                    ramped_pitch_target_rad = desired_pitch;
+                    have_ramped_target = 1;
+                } else {
+                    double yaw_step = desired_yaw - ramped_yaw_target_rad;
+                    double pitch_step = desired_pitch - ramped_pitch_target_rad;
+
+                    if (yaw_step > max_step) {
+                        yaw_step = max_step;
+                    } else if (yaw_step < -max_step) {
+                        yaw_step = -max_step;
+                    }
+                    if (pitch_step > max_step) {
+                        pitch_step = max_step;
+                    } else if (pitch_step < -max_step) {
+                        pitch_step = -max_step;
+                    }
+                    ramped_yaw_target_rad += yaw_step;
+                    ramped_pitch_target_rad += pitch_step;
+                }
+
+                target.yaw_target_rad = ramped_yaw_target_rad;
+                target.pitch_target_rad = ramped_pitch_target_rad;
+                target_source = TARGET_SOURCE_VISION;
+            } else if (have_ramped_target) {
+                /*
+                 * Ball lost: freeze the ramped target at the last known ball
+                 * direction so the camera holds where the ball was, instead of
+                 * snapping to the current (possibly drifted) camera angle.
+                 */
+                target.yaw_target_rad = ramped_yaw_target_rad;
+                target.pitch_target_rad = ramped_pitch_target_rad;
                 target_source = TARGET_SOURCE_VISION;
             }
         }
@@ -331,6 +582,19 @@ int control_loop_run(MotorComm *comm,
         }
 
         if (csv_log != 0) {
+            double captured_age_ms = 0.0;
+
+            if (vision_tracker != 0 && vision_snapshot.captured_monotonic_ns != 0u) {
+                uint64_t work_start_ns = timespec_to_ns(work_start);
+
+                if (work_start_ns >= vision_snapshot.captured_monotonic_ns) {
+                    captured_age_ms =
+                        (double)(work_start_ns -
+                                 vision_snapshot.captured_monotonic_ns) /
+                        1000000.0;
+                }
+            }
+
             fprintf(csv_log,
                     "%u,%.6f,"
                     "%d,%d,"
@@ -343,7 +607,11 @@ int control_loop_run(MotorComm *comm,
                     "%ld,%ld,%u,"
                     "%d,%d,"
                     "%ld,%ld,"
-                    "%.3f,%.3f,%d\n",
+                    "%.3f,%.3f,%d,"
+                    "%.9f,%.9f,"
+                    "%.9f,%.9f,"
+                    "%.6f,%.6f,"
+                    "%.3f,%d\n",
                     sample_index,
                     (double)timespec_diff_us(work_start, loop_start) / 1000000.0,
                     encoders.yaw,
@@ -369,7 +637,15 @@ int control_loop_run(MotorComm *comm,
                     control_compute_us,
                     vision_tracker != 0 ? vision_snapshot.frame_interval_ms : 0.0,
                     vision_tracker != 0 ? vision_snapshot.process_us : 0.0,
-                    vision_tracker != 0 ? vision_snapshot.late_frame : 0);
+                    vision_tracker != 0 ? vision_snapshot.late_frame : 0,
+                    vision_tracker != 0 && have_est ? est_ball_yaw_world : 0.0,
+                    vision_tracker != 0 && have_est ? est_ball_pitch_world : 0.0,
+                    vision_tracker != 0 && have_ramped_target ? ramped_yaw_target_rad : 0.0,
+                    vision_tracker != 0 && have_ramped_target ? ramped_pitch_target_rad : 0.0,
+                    vision_tracker != 0 ? ball_vel_yaw_rad_per_s : 0.0,
+                    vision_tracker != 0 ? ball_vel_pitch_rad_per_s : 0.0,
+                    captured_age_ms,
+                    vision_tracker != 0 ? vision_lost : 0);
         }
 
         ++sample_index;

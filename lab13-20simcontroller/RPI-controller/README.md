@@ -9,7 +9,7 @@ See `ARCHITECTURE.md` for the control/data-flow explanation.
 - `jiwy_calibration.*`: converts encoder counts to radians and owns measured travel spans, software home offsets, travel limits, and target clamps.
 - `twentysim_controller.*`: initializes and steps the generated yaw/pitch 20-sim submodels and converts normalized controller output to PWM commands.
 - `control_loop.*`: time-driven position-control loop for one yaw/pitch target.
-- `vision_blob.*`: green thresholding, largest-blob selection, centroid calculation, and smoothing.
+- `vision_blob.*`: green thresholding, largest-blob selection, and centroid calculation.
 - `vision_geometry.*`: centroid pixel position to yaw/pitch camera error in radians.
 - `vision_stream.*`: low-rate HTTP debug stream and annotated-frame rendering.
 - `vision_tracker.*`: optional Raspberry Pi GStreamer camera thread and snapshot publishing.
@@ -167,21 +167,37 @@ pitch_error_rad = atan(normalized_y * tan(vertical_fov_rad / 2.0));
 ```
 
 Positive yaw means the object is right of center. Positive pitch means the
-object is above center. Errors inside the configured deadband are reported as
-zero to stop small center-position corrections.
+object is above center. The raw angular error is reported without a deadband;
+limit-cycle prevention at center is handled by the world-estimate update gate
+in the control loop (see below).
 
-The configured control loop reads the latest camera result each sample. When a
-new valid camera frame arrives, the setpoint is:
+The control loop builds the setpoint in a fixed world frame so that slewing the
+camera toward the ball does not perturb its own target (the sensor-latency
+positive feedback that makes the camera oscillate). When a new valid camera
+frame arrives, the ball world angle is reconstructed as:
 
 ```text
-target = current encoder angle + camera error
+ball_world = camera_angle_at_capture + camera error
 ```
 
-That absolute target is reused until the next camera frame. If no ball is
-detected, the setpoint is the current encoder angle, so the robot stops chasing
-stale camera data. The same hold-current behavior is used if the latest valid
-camera frame is not refreshed for
-`JIWY_VISION_MAX_STALE_CONTROL_SAMPLES` control samples.
+`camera_angle_at_capture` is looked up by linear interpolation in a short
+encoder-history ring using the frame's `CLOCK_MONOTONIC` capture timestamp, not
+the current camera angle. That world estimate is then:
+
+1. Low-pass filtered (`JIWY_VISION_WORLD_FILTER_ALPHA`) to reject detection
+   noise.
+2. Deadband-gated at the update (`JIWY_VISION_YAW/PITCH_DEADBAND_RAD`): the
+   estimate only folds in a new measurement when it moves beyond the deadband,
+   so a centered ball produces a constant setpoint instead of a limit cycle.
+3. Optionally led by a velocity feedforward
+   (`JIWY_VISION_FEEDFORWARD_GAIN_*`) to reduce lag of a moving ball.
+4. Rate-limited (`JIWY_VISION_SETPOINT_MAX_RATE_RAD_PER_S`) so the per-frame
+   estimate change is handed to the PID as a smooth ramp instead of a step.
+
+If no ball is detected, or the latest valid frame is not refreshed for
+`JIWY_VISION_MAX_STALE_CONTROL_SAMPLES` control samples, the ramped target
+freezes at the last known ball direction so the camera holds where the ball
+was, instead of snapping to the current camera angle.
 
 # PID CSV logging
 

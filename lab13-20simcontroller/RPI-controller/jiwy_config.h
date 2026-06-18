@@ -80,10 +80,51 @@
 #define JIWY_VISION_BLOB_MAX_ASPECT_PERCENT 220
 
 /*
- * Exponential smoothing alpha for the chosen blob center. Larger follows fast
- * motion more closely but is noisier. Smaller is steadier but lags the ball.
+ * Target-provider tuning (world-frame setpoint generation).
+ *
+ * The vision setpoint is built in a fixed world frame:
+ *   ball_world = camera_angle_at_capture + camera_error
+ * instead of camera_angle_now + camera_error, so slewing toward the ball does
+ * not perturb its own setpoint (the classic sensor-latency positive feedback
+ * that makes the camera oscillate). The world estimate is then low-pass
+ * filtered, deadbanded at the update, and rate-limited before being handed to
+ * the PID.
  */
-#define JIWY_VISION_TRACK_SMOOTHING_ALPHA 0.70
+
+/*
+ * First-order low-pass on the world-frame ball position estimate. Larger
+ * follows hand motion more closely but transmits detection noise to the
+ * setpoint. Smaller is steadier but lags a moving ball. 0.35 suits a slowly
+ * hand-moved ball; raise toward 1.0 for fast targets, lower toward 0.1 for a
+ * stationary target that must hold rock-steady.
+ */
+#define JIWY_VISION_WORLD_FILTER_ALPHA 0.35
+
+/*
+ * Maximum setpoint slew rate fed to the PID, in rad/s. The ramped target moves
+ * toward the filtered world estimate by at most this rate per control sample,
+ * removing the per-frame step discontinuity that kicks the PID derivative /
+ * integral. 3.0 rad/s is gentle; raise if the camera lags a fast-moving ball,
+ * lower if you still see transient overshoot on acquisition.
+ */
+#define JIWY_VISION_SETPOINT_MAX_RATE_RAD_PER_S 3.0
+
+/*
+ * Velocity feedforward gain applied to the estimated ball angular velocity
+ * (rad/s) and added to the world estimate to produce the PID setpoint. Zero
+ * disables feedforward (recommended starting point). Raise toward ~0.05 to
+ * reduce steady-state lag of a continuously moving ball; too high causes
+ * overshoot.
+ */
+#define JIWY_VISION_FEEDFORWARD_GAIN_YAW   0.0
+#define JIWY_VISION_FEEDFORWARD_GAIN_PITCH 0.0
+
+/*
+ * Encoder history kept by the control loop for latency-correcting the vision
+ * setpoint. At 5 ms per sample, 64 samples covers 320 ms, well beyond typical
+ * USB webcam pipeline latency. Increase if your camera latency exceeds this.
+ */
+#define JIWY_CONTROL_ENCODER_HISTORY_SAMPLES 64u
 
 /*
  * If lock-to-previous is enabled in code, reject sudden blob jumps larger than
@@ -107,9 +148,11 @@
 #define JIWY_VISION_VERTICAL_FOV_RAD   (39.7 * JIWY_PI / 180.0)
 
 /*
- * Camera-error deadband. Errors smaller than this become zero so the robot does
- * not twitch when the ball is visually centered. Increase if it still hunts at
- * center. Decrease if it stops before the ball is centered accurately enough.
+ * World-estimate update deadband. A new camera measurement is only folded into
+ * the ball world-angle estimate when it moves the estimate beyond this on
+ * either axis, so a centered ball produces a constant setpoint instead of a
+ * limit cycle. Increase if it still hunts at center. Decrease if it stops
+ * before the ball is centered accurately enough.
  */
 #define JIWY_VISION_YAW_DEADBAND_RAD   0.01
 #define JIWY_VISION_PITCH_DEADBAND_RAD 0.01

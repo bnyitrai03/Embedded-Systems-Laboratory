@@ -243,11 +243,9 @@ static void find_green_blob(VisionBlobTracker *tracker,
     }
 }
 
-static void smooth_blob_detection(VisionBlobTracker *tracker,
+static void accept_blob_detection(VisionBlobTracker *tracker,
                                   VisionBlobDetection *detection)
 {
-    double alpha = JIWY_VISION_TRACK_SMOOTHING_ALPHA;
-
     if (!detection->valid) {
         ++tracker->lost_frames;
         if (tracker->lost_frames >= JIWY_VISION_TRACK_RESET_LOST_FRAMES) {
@@ -256,25 +254,15 @@ static void smooth_blob_detection(VisionBlobTracker *tracker,
         return;
     }
 
-    if (alpha < 0.0) {
-        alpha = 0.0;
-    } else if (alpha > 1.0) {
-        alpha = 1.0;
-    }
-
-    if (!tracker->have_filtered_object) {
-        tracker->filtered_object_x = detection->object_x;
-        tracker->filtered_object_y = detection->object_y;
-        tracker->have_filtered_object = 1;
-    } else {
-        tracker->filtered_object_x +=
-            alpha * (detection->object_x - tracker->filtered_object_x);
-        tracker->filtered_object_y +=
-            alpha * (detection->object_y - tracker->filtered_object_y);
-    }
-
-    detection->object_x = tracker->filtered_object_x;
-    detection->object_y = tracker->filtered_object_y;
+    /*
+     * Remember the accepted centroid as the tracker's current believed object
+     * position so the next frame's find_green_blob can reject sudden jumps and
+     * favor nearby blobs. No low-pass here: dynamics shaping is done in the
+     * control loop on the world-frame angle estimate, where it belongs.
+     */
+    tracker->filtered_object_x = detection->object_x;
+    tracker->filtered_object_y = detection->object_y;
+    tracker->have_filtered_object = 1;
     tracker->lost_frames = 0;
 }
 
@@ -304,6 +292,6 @@ int vision_blob_tracker_process_rgb(VisionBlobTracker *tracker,
     }
 
     find_green_blob(tracker, rgb, width, height, stride, detection);
-    smooth_blob_detection(tracker, detection);
+    accept_blob_detection(tracker, detection);
     return 0;
 }

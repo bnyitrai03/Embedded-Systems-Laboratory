@@ -119,6 +119,16 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
 
     memset(&snapshot, 0, sizeof(snapshot));
     snapshot.frame_count = data->frame_count;
+    /*
+     * frame_start was read at appsink callback entry and is the closest
+     * available proxy to the true capture time. The constant exposure-to-
+     * delivery offset shifts the world estimate by vel*offset (negligible for
+     * a slow/stationary ball); the variable delivery-to-control-loop delay,
+     * which is what the encoder-history lookup corrects, is captured exactly.
+     */
+    snapshot.captured_monotonic_ns =
+        (uint64_t)frame_start.tv_sec * 1000000000ull +
+        (uint64_t)frame_start.tv_nsec;
     if (data->have_last_frame_time) {
         frame_interval_ms =
             (double)timespec_diff_us(frame_start, data->last_frame_time) / 1000.0;

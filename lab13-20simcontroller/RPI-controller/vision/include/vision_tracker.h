@@ -32,6 +32,10 @@ typedef struct VisionTargetSnapshot {
     double process_us;
     /** Non-zero when the frame interval is unusually late. */
     int late_frame;
+    /** CLOCK_MONOTONIC timestamp (ns) at which this frame was delivered by the
+     *  camera pipeline, used by the control loop to look up the camera angle at
+     *  capture time for latency-corrected world-frame setpoint generation. */
+    uint64_t captured_monotonic_ns;
 } VisionTargetSnapshot;
 
 #include "vision_stream.h"

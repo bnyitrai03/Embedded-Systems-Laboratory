@@ -69,11 +69,16 @@ Other target sources can follow the same pattern:
 - vision target tracking with `--track`
 
 Vision avoids blocking the motor loop by processing camera frames on its own
-thread. The control loop only copies a small mutex-protected snapshot. When the
-green object is detected on a new camera frame, target radians are computed as
-current encoder angle plus camera error. That absolute target is reused until
-the next camera frame. When the object is lost or the camera result goes stale,
-the target is the current encoder angle.
+thread. The control loop only copies a small mutex-protected snapshot. The
+setpoint is built in a fixed world frame to avoid sensor-latency positive
+feedback: when the green object is detected on a new camera frame, the ball
+world angle is reconstructed as `camera_angle_at_capture + camera error`, where
+`camera_angle_at_capture` is interpolated from an encoder-history ring using the
+frame's capture timestamp (not the current camera angle). That world estimate is
+low-pass filtered, deadband-gated at the update, optionally led by a velocity
+feedforward, and rate-limited before being handed to the PID. When the object is
+lost or the camera result goes stale, the ramped target freezes at the last
+known ball direction so the camera holds where the ball was.
 
 ## Calibration and tuning
 
