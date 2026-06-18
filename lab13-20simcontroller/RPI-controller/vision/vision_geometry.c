@@ -25,6 +25,6 @@ void vision_pixel_to_camera_error(double object_x,
         pitch = 0.0;
     }
 
-    *yaw_error_rad = yaw;
-    *pitch_error_rad = pitch;
+    *yaw_error_rad = -yaw;
+    *pitch_error_rad = -pitch;
 }

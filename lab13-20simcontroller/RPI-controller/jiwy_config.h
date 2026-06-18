@@ -102,7 +102,7 @@
  * validating signs and FOV: 0.25 means command only 25% of the measured camera
  * angle. Increase toward 1.0 after the robot moves correctly but too slowly.
  */
-#define JIWY_VISION_TARGET_GAIN 1
+#define JIWY_VISION_TARGET_GAIN 0.25
 
 /*
  * Logitech C270 is commonly advertised as 60 deg diagonal. For a 4:3 640x480
@@ -125,7 +125,7 @@
  * Publish only every Nth camera frame to the browser debug stream. With a
  * 30 fps camera, 6 gives about 5 fps and keeps HTTP debug work cheap.
  */
-#define JIWY_VISION_STREAM_FPS_DIVISOR 1
+#define JIWY_VISION_STREAM_FPS_DIVISOR 3
 #define JIWY_VISION_DEBUG_EVERY_FRAMES 30
 
 /*
