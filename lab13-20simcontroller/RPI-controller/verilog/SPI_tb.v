@@ -60,23 +60,28 @@ module SPI_tb;
       spi_clk = 0;
       #100;
 
-      spi_cs = 0;   // start frame
+      // start frame
+      spi_cs = 0;
       #100;
 
       for (i = 31; i >= 0; i = i - 1) begin
-        spi_pico = tx_word[i];   // put next MOSI bit
+        // put next MOSI bit
+        spi_pico = tx_word[i];
 
         #50;
-        spi_clk = 1;             // rising edge: sample MISO
+        // rising edge: sample MISO
+        spi_clk = 1;
         #50;
         rx_word_out[i] = spi_poci;
 
         #50;
-        spi_clk = 0;             // falling edge: slave shifts next bit
+        // falling edge: slave shifts next bit
+        spi_clk = 0;
         #50;
       end
 
-      spi_cs = 1;   // end frame
+      // end frame
+      spi_cs = 1;
       #100;
     end
   endtask

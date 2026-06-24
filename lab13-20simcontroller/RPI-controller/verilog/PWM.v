@@ -12,7 +12,7 @@ module PWM #(
 
     output reg         INA,
     output reg         INB,
-    output reg         C // ie PWM
+    output reg         C
 );
     // 2500 ticks for one period with the default 50 MHz / 20 kHz settings.
     localparam PWM_PERIOD = CLK_FREQ / PWM_FREQ;

@@ -53,45 +53,41 @@ module SPI (
 
   wire SPI_PICO_data = SPI_PICOr[1];
 
-  reg [31:0] rx_shift = 32'h00000000;
-  reg [31:0] tx_shift = 32'h00000000;
-  reg [5:0]  bit_count = 6'd0;
+  reg [31:0] rx_shift = 0;
+  reg [31:0] tx_shift = 0;
+  reg [5:0]  bit_count = 0;
 
-  reg [13:0] pitch_pwm_duty_r   = 14'd0;
-  reg        pitch_dir_r        = 1'b0;
-  reg        pitch_pwm_enable_r = 1'b0;
+  reg [13:0] pitch_pwm_duty_r   = 0;
+  reg        pitch_dir_r        = 0;
+  reg        pitch_pwm_enable_r = 0;
 
-  reg [13:0] yaw_pwm_duty_r     = 14'd0;
-  reg        yaw_dir_r          = 1'b0;
-  reg        yaw_pwm_enable_r   = 1'b0;
+  reg [13:0] yaw_pwm_duty_r     = 0;
+  reg        yaw_dir_r          = 0;
+  reg        yaw_pwm_enable_r   = 0;
 
   always @(posedge clk) begin
     if (rst) begin
-      tx_shift <= 32'h00000000;
-      rx_shift <= 32'h00000000;
-      bit_count <= 6'd0;
-      yaw_pwm_duty_r <= 14'd0;
-      yaw_dir_r <= 1'b0;
-      yaw_pwm_enable_r <= 1'b0;
-      pitch_pwm_duty_r <= 14'd0;
-      pitch_dir_r <= 1'b0;
-      pitch_pwm_enable_r <= 1'b0;
+      tx_shift <= 0;
+      rx_shift <= 0;
+      bit_count <= 0;
+      yaw_pwm_duty_r <= 0;
+      yaw_dir_r <= 0;
+      yaw_pwm_enable_r <= 0;
+      pitch_pwm_duty_r <= 0;
+      pitch_dir_r <= 0;
+      pitch_pwm_enable_r <= 0;
     end else begin
       if (!SPI_CS_active) begin
         tx_shift <= {yaw_encoder_count, pitch_encoder_count};
-        rx_shift <= 32'h00000000;
-        bit_count <= 6'd0;
+        rx_shift <= 0;
+        bit_count <= 0;
       end else if (SPI_CS_startmessage) begin
-        /*
-         * Snapshot encoders at chip-select assertion so all 32 return bits
-         * belong to the same sample.
-         */
         tx_shift <= {yaw_encoder_count, pitch_encoder_count};
-        rx_shift <= 32'h00000000;
-        bit_count <= 6'd0;
+        rx_shift <= 0;
+        bit_count <= 0;
       end else if (SPI_CS_active && SPI_CLK_risingedge) begin
         rx_shift <= {rx_shift[30:0], SPI_PICO_data};
-        if (bit_count < 6'd32) begin
+        if (bit_count < 32) begin
           bit_count <= bit_count + 6'd1;
         end
       end
@@ -105,10 +101,10 @@ module SPI (
       end
 
       /*
-       * Only commit a new motor command after a complete 32-bit frame. Short or
-       * noisy transfers are ignored, leaving the previous command active.
+       * Only commit a new motor command after a complete 32-bit frame.
+       * Incomplete transfers are ignored, leaving the previous command active.
        */
-      if (SPI_CS_endmessage && bit_count == 6'd32) begin
+      if (SPI_CS_endmessage && bit_count == 32) begin
         yaw_dir_r          <= rx_shift[31];
         yaw_pwm_enable_r   <= rx_shift[30];
         yaw_pwm_duty_r     <= rx_shift[29:16];

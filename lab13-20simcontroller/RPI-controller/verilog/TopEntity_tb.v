@@ -25,10 +25,8 @@ module TopEntity_tb;
   wire PITCH_DIRA, PITCH_DIRB, PITCH_PWM_VAL;
   wire YAW_DIRA,   YAW_DIRB,   YAW_PWM_VAL;
 
-  // Generate main 50 MHz system clock (20 ns period)
   always #10 clk = ~clk;
 
-  // Instantiate DUT
   TopEntity dut (
     .clk          (clk),
     .btn1         (btn1),
@@ -68,7 +66,7 @@ module TopEntity_tb;
       #200;
 
       SPI_CS = 0;
-      #200;   // let slave detect CS and preload tx word
+      #200;
 
       for (i = 31; i >= 0; i = i - 1) begin
         SPI_PICO = mosi_word[i];
@@ -91,14 +89,13 @@ module TopEntity_tb;
   endtask
 
   initial begin
-    // Optional waves
     $dumpfile("TopEntity_tb.vcd");
     $dumpvars(0, TopEntity_tb);
 
     // Reset
     btn1 = 1;
     #200;
-    // Adding Initial values
+    // Initial values
     SPI_CS = 1;
     SPI_PICO = 0;
     PITCH_ENC_A = 0;
@@ -128,11 +125,10 @@ module TopEntity_tb;
     YAW_ENC_A = 1; YAW_ENC_B = 0; #500;
     $display("T=%0t Internal yaw count = %0d", $time, dut.yaw_decoder.count);
 
-    // Read encoder via SPI (send 0 as command)
+    // Read encoder via SPI
     spi_transfer32(0, rx_word);
     $display("T=%0t SPI read: pitch = %0d yaw = %0d", $time, $signed(rx_word[15:0]), $signed(rx_word[31:16]));
 
-    // Wait a bit
     #500;
 
     // Build a motor command

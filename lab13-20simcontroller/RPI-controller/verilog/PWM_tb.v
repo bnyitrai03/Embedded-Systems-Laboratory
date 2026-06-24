@@ -17,7 +17,6 @@ module PWM_tb;
         $dumpvars(0, PWM_tb);
     end
 
-    // Smaller values make the simulation easier to read
     PWM #(
         .CLK_FREQ(100),
         .PWM_FREQ(10)
@@ -61,7 +60,7 @@ module PWM_tb;
         dir = 1;
         #150;
 
-        // Stop again
+        // Stop
         enable = 0;
         #50;
 

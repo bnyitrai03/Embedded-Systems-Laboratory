@@ -24,7 +24,6 @@ module QuadDecoder_tb;
     end
   end
 
-// Start of your testbench script
   initial begin
     $dumpfile("quad_signals.vcd");
     $dumpvars(0, QuadDecoder_tb);
