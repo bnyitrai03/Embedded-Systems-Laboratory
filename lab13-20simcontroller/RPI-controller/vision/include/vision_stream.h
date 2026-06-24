@@ -16,8 +16,6 @@ typedef struct {
     uint8_t *frame;
     size_t frame_size;
     uint64_t frame_sequence;
-    int frame_width;
-    int frame_height;
     int enabled;
     int port;
     int running;
@@ -29,7 +27,6 @@ typedef struct {
 void vision_stream_init(VisionStream *stream);
 int vision_stream_start(VisionStream *stream, int enabled, int port);
 void vision_stream_stop(VisionStream *stream);
-void vision_stream_destroy(VisionStream *stream);
 void vision_stream_publish_rgb(VisionStream *stream,
                                const uint8_t *rgb,
                                int width,

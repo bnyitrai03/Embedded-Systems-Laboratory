@@ -235,7 +235,6 @@ int control_loop_run(MotorComm *comm,
 
         if (vision_tracker != 0) {
             target = active_vision_target;
-            target_source = TARGET_SOURCE_FIXED;
             hold_phase = 0;
 
             if (vision_tracker_read_latest(vision_tracker, &vision_snapshot) == 0 &&

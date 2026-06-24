@@ -12,8 +12,6 @@ typedef struct {
     int min_y;
     int max_x;
     int max_y;
-    double raw_object_x;
-    double raw_object_y;
     double object_x;
     double object_y;
 } VisionBlobDetection;

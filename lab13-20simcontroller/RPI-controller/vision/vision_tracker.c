@@ -493,8 +493,6 @@ int vision_tracker_start(VisionTracker *tracker,
         pthread_join(tracker->thread, NULL);
         tracker->thread_started = 0;
         vision_stream_stop(&tracker->stream);
-    } else {
-        tracker->running = 1;
     }
 
     return result;
@@ -512,7 +510,6 @@ void vision_tracker_stop(VisionTracker *tracker)
 
     pthread_join(tracker->thread, NULL);
     tracker->thread_started = 0;
-    tracker->running = 0;
 
     vision_stream_stop(&tracker->stream);
 }

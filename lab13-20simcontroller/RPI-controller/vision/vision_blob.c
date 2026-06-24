@@ -233,8 +233,6 @@ static void find_green_blob(VisionBlobTracker *tracker,
                 detection->min_y = min_y;
                 detection->max_x = max_x;
                 detection->max_y = max_y;
-                detection->raw_object_x = object_x;
-                detection->raw_object_y = object_y;
                 detection->object_x = object_x;
                 detection->object_y = object_y;
                 best_score = score;

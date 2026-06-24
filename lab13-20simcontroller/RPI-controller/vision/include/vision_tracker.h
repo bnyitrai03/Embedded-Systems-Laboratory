@@ -47,7 +47,6 @@ typedef struct {
     const char *camera_device;
     VisionStream stream;
     int debug_enabled;
-    int running;
     int thread_started;
     int start_done;
     int start_result;

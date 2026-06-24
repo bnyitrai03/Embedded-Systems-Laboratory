@@ -404,8 +404,6 @@ void vision_stream_publish_rgb(VisionStream *stream,
     free(stream->frame);
     stream->frame = frame;
     stream->frame_size = frame_size;
-    stream->frame_width = width;
-    stream->frame_height = height;
     ++stream->frame_sequence;
     pthread_cond_broadcast(&stream->cond);
     pthread_mutex_unlock(&stream->lock);
@@ -613,15 +611,4 @@ void vision_stream_stop(VisionStream *stream)
     stream->frame = NULL;
     stream->frame_size = 0;
     pthread_mutex_unlock(&stream->lock);
-}
-
-void vision_stream_destroy(VisionStream *stream)
-{
-    if (stream == NULL) {
-        return;
-    }
-
-    vision_stream_stop(stream);
-    pthread_cond_destroy(&stream->cond);
-    pthread_mutex_destroy(&stream->lock);
 }

@@ -20,8 +20,8 @@
 /**
  * @brief Maximum PWM duty value sent by the C controller.
  *
- * The FPGA PWM period is 2500 ticks at 50 MHz / 20 kHz, but the controller
- * intentionally limits commands to 250 ticks for safer lab bring-up.
+ * The FPGA PWM period is 2500 ticks at 50 MHz / 20 kHz. The controller limits
+ * commands to MOTOR_PWM_MAX ticks for safer lab bring-up.
  */
 #define MOTOR_PWM_MAX 512u
 
@@ -117,7 +117,7 @@
 
 /*
  * Publish only every Nth camera frame to the browser debug stream. With a
- * 30 fps camera, 6 gives about 5 fps and keeps HTTP debug work cheap.
+ * 30 fps camera, 3 gives about 10 fps and keeps HTTP debug work cheap.
  */
 #define JIWY_VISION_STREAM_FPS_DIVISOR 3
 #define JIWY_VISION_DEBUG_EVERY_FRAMES 30

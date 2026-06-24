@@ -2,17 +2,8 @@
 #define JIWY_20SIM_TUNING_H
 
 /**
- * @file jiwy_20sim_tuning.h
  * @brief PID and output-limit constants used by generated 20-sim controllers.
- *
- * This header is hand-owned lab tuning code. The generated yaw_model.c and
- * pitch_model.c files include it from their parameter initializer functions so
- * tuning values are active during generated submodel initialization.
- *
- * If the 20-sim controller code is regenerated, reapply the small generated
- * changes that include this header and use these macros in
- * YawModelInitialize_parameters() and PitchModelInitialize_parameters().
- */
+*/
 
 #define JIWY_YAW_CORR_GAIN 0.0
 #define JIWY_YAW_KP 0.28
