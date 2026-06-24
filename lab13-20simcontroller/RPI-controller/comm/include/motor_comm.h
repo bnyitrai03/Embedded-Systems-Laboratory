@@ -43,7 +43,7 @@ struct MotorComm {
 };
 
 /**
- * @brief Dispatch one command/sample exchange through the active backend.
+ * @brief Dispatch a command through the active backend.
  */
 static inline int motor_comm_exchange(MotorComm *comm,
                                       MotorCommand command,

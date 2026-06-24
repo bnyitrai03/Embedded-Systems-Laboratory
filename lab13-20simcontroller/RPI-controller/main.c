@@ -81,9 +81,8 @@ int main(int argc, char *argv[])
     signal(SIGTERM, handle_signal);
 
     /*
-     * All runtime behavior goes through MotorComm. Today that backend is
-     * Raspberry Pi spidev, but homing and control_loop do not depend on spidev
-     * details.
+     * All runtime behavior goes through MotorComm. The backend is
+     * Raspberry Pi spidev, but homing and control_loop do not depend on spidev details.
      */
     result = rpi_spi_comm_open(&spi,
                                &comm,
@@ -98,11 +97,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    printf("Starting homing over SPI channel %u at %u Hz\n",
-           RPI_SPI_DEFAULT_CHANNEL,
-           speed_hz);
-    printf("TX protocol: yaw[dir enable pwm14], then pitch[dir enable pwm14]\n");
-    printf("RX protocol: signed int16 yaw encoder, then signed int16 pitch encoder\n");
+    printf("Starting homing over SPI channel %u at %u Hz\n", RPI_SPI_DEFAULT_CHANNEL, speed_hz);
 
     /*
      * Homing defines software zero. Do not initialize the generated 20-sim
@@ -125,36 +120,27 @@ int main(int argc, char *argv[])
     }
 
     printf("Homing complete\n");
-    printf("Software home offsets: yaw=%d counts, pitch=%d counts\n",
-           calibration.yaw_home_count,
-           calibration.pitch_home_count);
+    printf("Software home offsets: yaw=%d counts, pitch=%d counts\n", calibration.yaw_home_count, calibration.pitch_home_count);
 
     if (run_hold_loop || run_track_loop) {
         EncoderSample initial_encoders;
         TwentySimController controller;
         ControlTarget initial_target = hold_schedule.target1;
-        double controller_step_size_s =
-            (double)control_config.sample_period_us / 1000000.0;
+        double controller_step_size_s = (double)control_config.sample_period_us / 1000000.0;
         /*
          * Seed the generated controller with the first post-homing feedback
          * sample so its initial error is consistent with the software home.
          */
-        result = motor_comm_exchange(&comm,
-                                     protocol_stop_command(),
-                                     &initial_encoders);
+        result = motor_comm_exchange(&comm, protocol_stop_command(), &initial_encoders);
         if (result < 0) {
-            fprintf(stderr,
-                    "Failed to read initial encoders: %s\n",
-                    strerror(-result));
+            fprintf(stderr, "Failed to read initial encoders: %s\n", strerror(-result));
             motor_comm_close(&comm);
             return 1;
         }
 
         if (run_track_loop) {
-            initial_target.yaw_target_rad =
-                (calibration.yaw_min_rad + calibration.yaw_max_rad) / 2.0;
-            initial_target.pitch_target_rad =
-                (calibration.pitch_min_rad + calibration.pitch_max_rad) / 2.0;
+            initial_target.yaw_target_rad = (calibration.yaw_min_rad + calibration.yaw_max_rad) / 2.0;
+            initial_target.pitch_target_rad = (calibration.pitch_min_rad + calibration.pitch_max_rad) / 2.0;
 
             vision_tracker_init(&vision_tracker);
             result = vision_tracker_start(&vision_tracker,
@@ -181,8 +167,7 @@ int main(int argc, char *argv[])
                                   initial_target.pitch_target_rad);
 
         if (run_track_loop) {
-            printf("Starting vision tracking control loop using %s\n",
-                   camera_device);
+            printf("Starting vision tracking control loop using %s\n", camera_device);
         } else {
             printf("Starting hold calibration schedule:\n");
             printf("  target1 yaw=%.4f rad pitch=%.4f rad duration=%.2f s\n",
@@ -193,12 +178,10 @@ int main(int argc, char *argv[])
                    hold_schedule.target2.yaw_target_rad,
                    hold_schedule.target2.pitch_target_rad,
                    hold_schedule.target2_duration_s);
-            printf("  repeat=%s\n",
-                   hold_schedule.repeat ? "on" : "off");
+            printf("  repeat=%s\n", hold_schedule.repeat ? "on" : "off");
         }
         if (control_config.csv_log_path != 0) {
-            printf("Writing control-loop CSV log to %s\n",
-                   control_config.csv_log_path);
+            printf("Writing control-loop CSV log to %s\n", control_config.csv_log_path);
         }
         result = control_loop_run(&comm,
                                   &controller,
