@@ -103,7 +103,7 @@
  * frame-rate target jumps into a smooth ramp for the PID. Increase if tracking
  * is too sluggish; decrease if target steps still shake the mechanism.
  */
-#define JIWY_VISION_TARGET_SLEW_RAD_PER_SAMPLE 0.001
+#define JIWY_VISION_TARGET_SLEW_RAD_PER_SAMPLE 0.01
 
 /*
  * Logitech C270 is commonly advertised as 60 deg diagonal. For a 4:3 640x480
