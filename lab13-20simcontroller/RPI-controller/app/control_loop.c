@@ -38,6 +38,23 @@ static long timespec_diff_us(struct timespec end, struct timespec start)
     return (long)sec * 1000000L + nsec / 1000L;
 }
 
+static double slew_toward(double current, double target, double max_step)
+{
+    double delta = target - current;
+
+    if (!(max_step > 0.0)) {
+        return target;
+    }
+
+    if (delta > max_step) {
+        return current + max_step;
+    }
+    if (delta < -max_step) {
+        return current - max_step;
+    }
+    return target;
+}
+
 static ControlTarget hold_schedule_target_at(const HoldSchedule *schedule,
                                              double elapsed_s,
                                              int *phase_out)
@@ -133,6 +150,7 @@ int control_loop_run(MotorComm *comm,
     uint64_t last_vision_frame_count = 0;
     int have_vision_frame_count = 0;
     ControlTarget active_vision_target = target;
+    ControlTarget slewed_vision_target = target;
     int result;
 
     result = clock_gettime(CLOCK_MONOTONIC, &next_deadline);
@@ -234,7 +252,6 @@ int control_loop_run(MotorComm *comm,
         }
 
         if (vision_tracker != 0) {
-            target = active_vision_target;
             hold_phase = 0;
 
             if (vision_tracker_read_latest(vision_tracker, &vision_snapshot) == 0 &&
@@ -259,6 +276,19 @@ int control_loop_run(MotorComm *comm,
                 }
             }
 
+            slewed_vision_target.yaw_target_rad =
+                jiwy_clamp_yaw_target(
+                    calibration,
+                    slew_toward(slewed_vision_target.yaw_target_rad,
+                                active_vision_target.yaw_target_rad,
+                                JIWY_VISION_TARGET_SLEW_RAD_PER_SAMPLE));
+            slewed_vision_target.pitch_target_rad =
+                jiwy_clamp_pitch_target(
+                    calibration,
+                    slew_toward(slewed_vision_target.pitch_target_rad,
+                                active_vision_target.pitch_target_rad,
+                                JIWY_VISION_TARGET_SLEW_RAD_PER_SAMPLE));
+            target = slewed_vision_target;
             target_source = TARGET_SOURCE_VISION;
         }
 

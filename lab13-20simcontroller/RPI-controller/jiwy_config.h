@@ -99,6 +99,13 @@
 #define JIWY_VISION_TARGET_GAIN 1.0
 
 /*
+ * Maximum vision target movement per 200 Hz control sample. This turns camera
+ * frame-rate target jumps into a smooth ramp for the PID. Increase if tracking
+ * is too sluggish; decrease if target steps still shake the mechanism.
+ */
+#define JIWY_VISION_TARGET_SLEW_RAD_PER_SAMPLE 0.001
+
+/*
  * Logitech C270 is commonly advertised as 60 deg diagonal. For a 4:3 640x480
  * frame, that corresponds to about 49.6 deg horizontal and 39.7 deg vertical.
  * Increase these if the robot under-rotates for a measured pixel offset.
