@@ -25,6 +25,7 @@ HomingConfig homing_default_config(void)
     return config;
 }
 
+// WTF?
 static void sleep_us(unsigned usec)
 {
     struct timespec request;
@@ -46,13 +47,10 @@ static const char *axis_name(HomeAxis axis)
 
 static MotorDirection opposite_direction(MotorDirection direction)
 {
-    return (direction == MOTOR_DIR_POSITIVE) ? MOTOR_DIR_NEGATIVE
-                                             : MOTOR_DIR_POSITIVE;
+    return (direction == MOTOR_DIR_POSITIVE) ? MOTOR_DIR_NEGATIVE : MOTOR_DIR_POSITIVE;
 }
 
-static MotorCommand home_command(HomeAxis axis,
-                                 MotorDirection direction,
-                                 uint16_t pwm)
+static MotorCommand home_command(HomeAxis axis, MotorDirection direction, uint16_t pwm)
 {
     MotorCommand command = protocol_stop_command();
     AxisCommand axis_command;
@@ -70,9 +68,7 @@ static MotorCommand home_command(HomeAxis axis,
     return command;
 }
 
-static int stop_and_settle(MotorComm *comm,
-                           const HomingConfig *config,
-                           volatile sig_atomic_t *keep_running)
+static int stop_and_settle(MotorComm *comm, const HomingConfig *config, volatile sig_atomic_t *keep_running)
 {
     unsigned i;
     EncoderSample ignored;
@@ -119,18 +115,13 @@ static int drive_axis_until_stalled(MotorComm *comm,
            (unsigned)direction,
            last_moving_count);
 
-    for (sample_index = 0;
-         sample_index < config->max_samples_per_axis && *keep_running;
-         ++sample_index) {
-        result = motor_comm_exchange(comm,
-                                     home_command(axis, direction, config->pwm),
-                                     &sample);
+    for (sample_index = 0; sample_index < config->max_samples_per_axis && *keep_running; ++sample_index) {
+        result = motor_comm_exchange(comm, home_command(axis, direction, config->pwm), &sample);
         if (result < 0) {
             return result;
         }
 
-        if (abs(axis_count(sample, axis) - last_moving_count) >=
-            (int)config->movement_threshold_counts) {
+        if (abs(axis_count(sample, axis) - last_moving_count) >= (int)config->movement_threshold_counts) {
             last_moving_count = axis_count(sample, axis);
             stagnant_samples = 0;
         } else {
@@ -138,11 +129,10 @@ static int drive_axis_until_stalled(MotorComm *comm,
         }
 
         /*
-         * With no limit switch, the mechanical stop is inferred from encoder
-         * stagnation. Keep PWM low: this intentionally pushes into the end stop.
+         * The mechanical stop is inferred from encoder stagnation.
+         * Keep PWM low: this intentionally pushes into the end stop.
          */
-        if (sample_index >= config->stop_window_samples &&
-            stagnant_samples >= config->stop_window_samples) {
+        if (sample_index >= config->stop_window_samples && stagnant_samples >= config->stop_window_samples) {
             *stop_count = (int16_t)axis_count(sample, axis);
             printf("%s stop found at encoder count %d\n",
                    axis_name(axis),
@@ -163,7 +153,6 @@ static int drive_axis_until_stalled(MotorComm *comm,
 static unsigned count_span(int16_t first_count, int16_t second_count)
 {
     int diff = (int)first_count - (int)second_count;
-
     return (unsigned)abs(diff);
 }
 
