@@ -11,6 +11,18 @@
 #define VISION_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define VISION_MAX(a, b) ((a) > (b) ? (a) : (b))
 
+#define VISION_TRACK_DISTANCE_WEIGHT 0.25
+
+typedef struct {
+    uint64_t pixels;
+    uint64_t sum_x;
+    uint64_t sum_y;
+    int min_x;
+    int min_y;
+    int max_x;
+    int max_y;
+} BlobRun;
+
 void vision_blob_tracker_init(VisionBlobTracker *tracker)
 {
     if (tracker == NULL) {
@@ -117,20 +129,13 @@ static int blob_shape_is_valid(uint64_t pixels,
         box_area * (uint64_t)JIWY_VISION_BLOB_MIN_FILL_PERCENT;
 }
 
-static void find_green_blob(VisionBlobTracker *tracker,
-                            const uint8_t *rgb,
-                            int width,
-                            int height,
-                            int stride,
-                            VisionBlobDetection *detection)
+static void build_green_mask(VisionBlobTracker *tracker,
+                             const uint8_t *rgb,
+                             int width,
+                             int height,
+                             int stride,
+                             VisionBlobDetection *detection)
 {
-    int tracking_locked =
-        tracker->have_filtered_object &&
-        tracker->lost_frames < JIWY_VISION_TRACK_RESET_LOST_FRAMES;
-    double best_score = -HUGE_VAL;
-
-    memset(detection, 0, sizeof(*detection));
-
     for (int y = 0; y < height; ++y) {
         const uint8_t *row = rgb + y * stride;
         size_t row_offset = (size_t)y * (size_t)width;
@@ -147,72 +152,128 @@ static void find_green_blob(VisionBlobTracker *tracker,
             }
         }
     }
+}
+
+static int extract_blob(VisionBlobTracker *tracker,
+                        int width,
+                        int height,
+                        int start_index,
+                        BlobRun *blob)
+{
+    int head = 0;
+    int tail = 0;
+
+    if (tracker->green_mask[start_index] == 0) {
+        return 0;
+    }
+
+    blob->pixels = 0;
+    blob->sum_x = 0;
+    blob->sum_y = 0;
+    blob->min_x = width;
+    blob->min_y = height;
+    blob->max_x = 0;
+    blob->max_y = 0;
+
+    tracker->green_mask[start_index] = 0;
+    tracker->component_queue[tail++] = start_index;
+
+    while (head < tail) {
+        int pixel_index = tracker->component_queue[head++];
+        int pixel_x = pixel_index % width;
+        int pixel_y = pixel_index / width;
+
+        ++blob->pixels;
+        blob->sum_x += (uint64_t)pixel_x;
+        blob->sum_y += (uint64_t)pixel_y;
+        blob->min_x = VISION_MIN(blob->min_x, pixel_x);
+        blob->min_y = VISION_MIN(blob->min_y, pixel_y);
+        blob->max_x = VISION_MAX(blob->max_x, pixel_x);
+        blob->max_y = VISION_MAX(blob->max_y, pixel_y);
+
+        if (pixel_x > 0 &&
+            tracker->green_mask[pixel_index - 1] != 0) {
+            tracker->green_mask[pixel_index - 1] = 0;
+            tracker->component_queue[tail++] = pixel_index - 1;
+        }
+        if (pixel_x + 1 < width &&
+            tracker->green_mask[pixel_index + 1] != 0) {
+            tracker->green_mask[pixel_index + 1] = 0;
+            tracker->component_queue[tail++] = pixel_index + 1;
+        }
+        if (pixel_y > 0 &&
+            tracker->green_mask[pixel_index - width] != 0) {
+            tracker->green_mask[pixel_index - width] = 0;
+            tracker->component_queue[tail++] = pixel_index - width;
+        }
+        if (pixel_y + 1 < height &&
+            tracker->green_mask[pixel_index + width] != 0) {
+            tracker->green_mask[pixel_index + width] = 0;
+            tracker->component_queue[tail++] = pixel_index + width;
+        }
+    }
+
+    return 1;
+}
+
+static double score_blob(const VisionBlobTracker *tracker,
+                         const BlobRun *blob,
+                         double object_x,
+                         double object_y,
+                         int tracking_locked)
+{
+    double score = (double)blob->pixels;
+
+    if (tracking_locked) {
+        double dx = object_x - tracker->filtered_object_x;
+        double dy = object_y - tracker->filtered_object_y;
+        double distance = sqrt(dx * dx + dy * dy);
+
+        score -= distance * distance * VISION_TRACK_DISTANCE_WEIGHT;
+    }
+
+    return score;
+}
+
+static void find_green_blob(VisionBlobTracker *tracker,
+                            const uint8_t *rgb,
+                            int width,
+                            int height,
+                            int stride,
+                            VisionBlobDetection *detection)
+{
+    int tracking_locked =
+        tracker->have_filtered_object &&
+        tracker->lost_frames < JIWY_VISION_TRACK_RESET_LOST_FRAMES;
+    double best_score = -HUGE_VAL;
+
+    memset(detection, 0, sizeof(*detection));
+    build_green_mask(tracker, rgb, width, height, stride, detection);
 
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             int start_index = y * width + x;
-            int head = 0;
-            int tail = 0;
-            uint64_t pixels = 0;
-            uint64_t sum_x = 0;
-            uint64_t sum_y = 0;
-            int min_x = width;
-            int min_y = height;
-            int max_x = 0;
-            int max_y = 0;
+            BlobRun blob;
             double object_x;
             double object_y;
             double score;
 
-            if (tracker->green_mask[start_index] == 0) {
+            if (!extract_blob(tracker, width, height, start_index, &blob)) {
                 continue;
             }
 
-            tracker->green_mask[start_index] = 0;
-            tracker->component_queue[tail++] = start_index;
-
-            while (head < tail) {
-                int pixel_index = tracker->component_queue[head++];
-                int pixel_x = pixel_index % width;
-                int pixel_y = pixel_index / width;
-
-                ++pixels;
-                sum_x += (uint64_t)pixel_x;
-                sum_y += (uint64_t)pixel_y;
-                min_x = VISION_MIN(min_x, pixel_x);
-                min_y = VISION_MIN(min_y, pixel_y);
-                max_x = VISION_MAX(max_x, pixel_x);
-                max_y = VISION_MAX(max_y, pixel_y);
-
-                if (pixel_x > 0 &&
-                    tracker->green_mask[pixel_index - 1] != 0) {
-                    tracker->green_mask[pixel_index - 1] = 0;
-                    tracker->component_queue[tail++] = pixel_index - 1;
-                }
-                if (pixel_x + 1 < width &&
-                    tracker->green_mask[pixel_index + 1] != 0) {
-                    tracker->green_mask[pixel_index + 1] = 0;
-                    tracker->component_queue[tail++] = pixel_index + 1;
-                }
-                if (pixel_y > 0 &&
-                    tracker->green_mask[pixel_index - width] != 0) {
-                    tracker->green_mask[pixel_index - width] = 0;
-                    tracker->component_queue[tail++] = pixel_index - width;
-                }
-                if (pixel_y + 1 < height &&
-                    tracker->green_mask[pixel_index + width] != 0) {
-                    tracker->green_mask[pixel_index + width] = 0;
-                    tracker->component_queue[tail++] = pixel_index + width;
-                }
-            }
-
-            if (!blob_shape_is_valid(pixels, min_x, min_y, max_x, max_y)) {
+            if (!blob_shape_is_valid(blob.pixels,
+                                     blob.min_x,
+                                     blob.min_y,
+                                     blob.max_x,
+                                     blob.max_y)) {
                 continue;
             }
 
-            object_x = (double)sum_x / (double)pixels;
-            object_y = (double)sum_y / (double)pixels;
-            score = (double)pixels;
+            object_x = (double)blob.sum_x / (double)blob.pixels;
+            object_y = (double)blob.sum_y / (double)blob.pixels;
+            score = score_blob(tracker, &blob, object_x, object_y,
+                               tracking_locked);
 
             if (tracking_locked) {
                 double dx = object_x - tracker->filtered_object_x;
@@ -222,17 +283,15 @@ static void find_green_blob(VisionBlobTracker *tracker,
                 if (distance > JIWY_VISION_TRACK_MAX_JUMP_PIXELS) {
                     continue;
                 }
-
-                score -= distance * distance * 0.25;
             }
 
             if (!detection->valid || score > best_score) {
                 detection->valid = 1;
-                detection->blob_pixels = pixels;
-                detection->min_x = min_x;
-                detection->min_y = min_y;
-                detection->max_x = max_x;
-                detection->max_y = max_y;
+                detection->blob_pixels = blob.pixels;
+                detection->min_x = blob.min_x;
+                detection->min_y = blob.min_y;
+                detection->max_x = blob.max_x;
+                detection->max_y = blob.max_y;
                 detection->object_x = object_x;
                 detection->object_y = object_y;
                 best_score = score;

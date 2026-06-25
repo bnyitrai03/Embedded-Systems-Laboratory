@@ -123,6 +123,18 @@
 #define JIWY_VISION_DEBUG_EVERY_FRAMES 30
 
 /*
+ * A frame is flagged "late" when its interval exceeds this percentage of the
+ * nominal frame period. 150 corresponds to 1.5x the configured frame rate.
+ */
+#define JIWY_VISION_LATE_FRAME_THRESHOLD_PCT 150
+
+/*
+ * Seconds to wait for the GStreamer camera pipeline to reach the PLAYING state
+ * before reporting a startup failure.
+ */
+#define JIWY_VISION_PIPELINE_READY_TIMEOUT_S 5
+
+/*
  * Pixel-level green threshold.
  *
  * GREEN_MIN_CHANNEL: minimum dominant green channel. Increase to ignore dark
