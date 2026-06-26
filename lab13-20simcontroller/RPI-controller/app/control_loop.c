@@ -16,8 +16,7 @@ ControlLoopConfig control_loop_default_config(void)
     return config;
 }
 
-static struct timespec timespec_add_us(struct timespec time,
-                                       unsigned usec)
+static struct timespec timespec_add_us(struct timespec time, unsigned usec)
 {
     time.tv_sec += (time_t)(usec / 1000000u);
     time.tv_nsec += (long)(usec % 1000000u) * 1000L;
@@ -38,9 +37,7 @@ static long timespec_diff_us(struct timespec end, struct timespec start)
     return (long)sec * 1000000L + nsec / 1000L;
 }
 
-static ControlTarget hold_schedule_target_at(const HoldSchedule *schedule,
-                                             double elapsed_s,
-                                             int *phase_out)
+static ControlTarget hold_schedule_target_at(const HoldSchedule *schedule, double elapsed_s, int *phase_out)
 {
     double cycle_duration_s;
 
@@ -94,14 +91,11 @@ static int sleep_until(struct timespec deadline)
     int result;
 
     /*
-     * Raspberry Pi/Linux absolute sleep. TIMER_ABSTIME keeps the loop anchored
+     * Raspberry Pi absolute sleep. TIMER_ABSTIME keeps the loop anchored
      * to the original schedule instead of adding work time to every period.
      */
     do {
-        result = clock_nanosleep(CLOCK_MONOTONIC,
-                                 TIMER_ABSTIME,
-                                 &deadline,
-                                 0);
+        result = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &deadline, 0);
     } while (result == EINTR);
 
     return result;
@@ -184,8 +178,7 @@ int control_loop_run(MotorComm *comm,
 
         memset(&vision_snapshot, 0, sizeof(vision_snapshot));
 
-        next_deadline = timespec_add_us(next_deadline,
-                                        config->sample_period_us);
+        next_deadline = timespec_add_us(next_deadline, config->sample_period_us);
 
         result = clock_gettime(CLOCK_MONOTONIC, &work_start);
         if (result < 0) {
@@ -196,10 +189,8 @@ int control_loop_run(MotorComm *comm,
         }
 
         /*
-         * SPI is full duplex. This exchange sends the command computed during
-         * the previous sample while receiving the encoder sample used for the
-         * next command. That creates one sample of command delay but avoids a
-         * separate "read encoders" transaction.
+         * This exchange sends the command computed during the previous sample 
+         * while receiving the encoder sample used for the next command.
          */
         result = clock_gettime(CLOCK_MONOTONIC, &spi_start);
         if (result < 0) {
@@ -227,8 +218,7 @@ int control_loop_run(MotorComm *comm,
         pitch_actual_rad = jiwy_pitch_rad(calibration, encoders.pitch);
 
         if (hold_schedule != 0) {
-            double elapsed_s =
-                (double)timespec_diff_us(work_start, loop_start) / 1000000.0;
+            double elapsed_s = (double)timespec_diff_us(work_start, loop_start) / 1000000.0;
             target = hold_schedule_target_at(hold_schedule, elapsed_s, &hold_phase);
             target_source = TARGET_SOURCE_HOLD_SCHEDULE;
         }
@@ -243,18 +233,10 @@ int control_loop_run(MotorComm *comm,
                     vision_snapshot.frame_count != last_vision_frame_count) {
                     last_vision_frame_count = vision_snapshot.frame_count;
                     have_vision_frame_count = 1;
-                    active_vision_target.yaw_target_rad =
-                        jiwy_clamp_yaw_target(
-                            calibration,
-                            yaw_actual_rad +
-                            JIWY_VISION_TARGET_GAIN *
-                            vision_snapshot.yaw_error_rad);
+                    active_vision_target.yaw_target_rad = 
+                        jiwy_clamp_yaw_target(calibration, yaw_actual_rad + JIWY_VISION_TARGET_GAIN * vision_snapshot.yaw_error_rad);
                     active_vision_target.pitch_target_rad =
-                        jiwy_clamp_pitch_target(
-                            calibration,
-                            pitch_actual_rad +
-                            JIWY_VISION_TARGET_GAIN *
-                            vision_snapshot.pitch_error_rad);
+                        jiwy_clamp_pitch_target(calibration, pitch_actual_rad + JIWY_VISION_TARGET_GAIN * vision_snapshot.pitch_error_rad);
                     target = active_vision_target;
                 }
             }
@@ -262,11 +244,7 @@ int control_loop_run(MotorComm *comm,
             target_source = TARGET_SOURCE_VISION;
         }
 
-        output = twentysim_controller_step(controller,
-                                           calibration,
-                                           encoders,
-                                           target.yaw_target_rad,
-                                           target.pitch_target_rad);
+        output = twentysim_controller_step(controller, calibration, encoders, target.yaw_target_rad, target.pitch_target_rad);
         command = controller_output_to_command(output);
         result = clock_gettime(CLOCK_MONOTONIC, &compute_end);
         if (result < 0) {
@@ -304,8 +282,7 @@ int control_loop_run(MotorComm *comm,
             work_max_us = work_us;
         }
 
-        if (config->log_period_samples != 0 &&
-            sample_index % config->log_period_samples == 0) {
+        if (config->log_period_samples != 0 && sample_index % config->log_period_samples == 0) {
             printf("enc yaw=%d pitch=%d target yaw=%.4f pitch=%.4f actual yaw=%.4f pitch=%.4f spi=%ldus ctrl=%ldus work=%ldus late=%ldus overruns=%u src=%d phase=%d\n",
                    encoders.yaw,
                    encoders.pitch,
@@ -368,8 +345,6 @@ int control_loop_run(MotorComm *comm,
         if (lateness_us > 0) {
             /*
              * If the sample has already missed its deadline, skip sleeping.
-             * The next iteration advances to the next absolute deadline and
-             * tries to recover without accumulating drift.
              */
             continue;
         }
