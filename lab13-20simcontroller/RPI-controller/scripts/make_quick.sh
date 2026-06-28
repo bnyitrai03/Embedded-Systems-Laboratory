@@ -11,4 +11,4 @@ make
 #./jiwy_controller 100000 200 --track --status-every 100 --vision-stream --log yaw_pitch_test.csv
 #./jiwy_controller 100000 200 --hold --status-every 100 --vision-stream --log yaw_pitch_test.csv
 #sudo ./jiwy_controller --hold --log yaw_pitch_test.csv
-sudo ./jiwy_controller --track --log yaw_pitch_test.csv
+sudo ./jiwy_controller --track
