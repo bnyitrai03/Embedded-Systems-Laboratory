@@ -9,16 +9,13 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-static int spi_open_device(unsigned spi_channel,
-                           unsigned speed_hz,
-                           unsigned spi_flags)
+static int spi_open_device(unsigned spi_channel, unsigned speed_hz, unsigned spi_flags)
 {
     int fd;
     uint8_t spi_mode = (uint8_t)(spi_flags & 0x3u);
     uint8_t spi_bits = 8;
     char dev[32];
 
-    /* The lab FPGA is wired as /dev/spidev0.<channel> on the Raspberry Pi. */
     snprintf(dev, sizeof(dev), "/dev/spidev0.%u", spi_channel);
 
     fd = open(dev, O_RDWR);
@@ -51,11 +48,6 @@ static int spi_transfer(RpiSpiComm *spi, uint8_t tx[4], uint8_t rx[4])
 {
     struct spi_ioc_transfer transfer;
 
-    /*
-     * Protocol words are packed as four big-endian bytes. Keep spidev at
-     * 8 bits/word so the byte buffer is shifted exactly as tx[0]..tx[3] with
-     * CS held low for the whole 4-byte transfer.
-     */
     memset(&transfer, 0, sizeof(transfer));
     transfer.tx_buf = (unsigned long)tx;
     transfer.rx_buf = (unsigned long)rx;
@@ -72,9 +64,7 @@ static int spi_transfer(RpiSpiComm *spi, uint8_t tx[4], uint8_t rx[4])
     return 0;
 }
 
-static int rpi_spi_exchange(void *context,
-                            MotorCommand command,
-                            EncoderSample *sample)
+static int rpi_spi_exchange(void *context, MotorCommand command, EncoderSample *sample)
 {
     RpiSpiComm *spi = (RpiSpiComm *)context;
     uint8_t tx[4];
@@ -100,11 +90,7 @@ static void rpi_spi_close_context(void *context)
     rpi_spi_comm_close((RpiSpiComm *)context);
 }
 
-int rpi_spi_comm_open(RpiSpiComm *spi,
-                      MotorComm *comm,
-                      unsigned channel,
-                      unsigned speed_hz,
-                      unsigned spi_flags)
+int rpi_spi_comm_open(RpiSpiComm *spi, MotorComm *comm, unsigned channel, unsigned speed_hz, unsigned spi_flags)
 {
     int fd;
 
@@ -117,7 +103,7 @@ int rpi_spi_comm_open(RpiSpiComm *spi,
     spi->speed_hz = speed_hz;
     spi->channel = channel;
 
-    /* Bind the spidev implementation behind the generic MotorComm interface. */
+    /* Bind the spidev to the MotorComm interface. */
     comm->context = spi;
     comm->exchange = rpi_spi_exchange;
     comm->close = rpi_spi_close_context;
