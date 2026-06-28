@@ -33,44 +33,32 @@ JiwyCalibration jiwy_default_calibration(void)
     return calibration;
 }
 
-void jiwy_set_yaw_travel_counts(JiwyCalibration *calibration,
-                                unsigned travel_counts)
+void jiwy_set_yaw_travel_counts(JiwyCalibration *calibration, unsigned travel_counts)
 {
-    calibration->yaw_counts_per_rad =
-        (double)travel_counts / degrees_to_rad(JIWY_YAW_TRAVEL_DEGREES);
+    calibration->yaw_counts_per_rad = (double)travel_counts / degrees_to_rad(JIWY_YAW_TRAVEL_DEGREES);
 }
 
-void jiwy_set_pitch_travel_counts(JiwyCalibration *calibration,
-                                  unsigned travel_counts)
+void jiwy_set_pitch_travel_counts(JiwyCalibration *calibration, unsigned travel_counts)
 {
-    calibration->pitch_counts_per_rad =
-        (double)travel_counts / degrees_to_rad(JIWY_PITCH_TRAVEL_DEGREES);
+    calibration->pitch_counts_per_rad = (double)travel_counts / degrees_to_rad(JIWY_PITCH_TRAVEL_DEGREES);
 }
 
 double jiwy_yaw_rad(const JiwyCalibration *calibration, int16_t count)
 {
-    return ((double)count - (double)calibration->yaw_home_count) /
-           calibration->yaw_counts_per_rad;
+    return ((double)count - (double)calibration->yaw_home_count) / calibration->yaw_counts_per_rad;
 }
 
 double jiwy_pitch_rad(const JiwyCalibration *calibration, int16_t count)
 {
-    return ((double)count - (double)calibration->pitch_home_count) /
-           calibration->pitch_counts_per_rad;
+    return ((double)count - (double)calibration->pitch_home_count) / calibration->pitch_counts_per_rad;
 }
 
-double jiwy_clamp_yaw_target(const JiwyCalibration *calibration,
-                             double target_rad)
+double jiwy_clamp_yaw_target(const JiwyCalibration *calibration, double target_rad)
 {
-    return clamp(target_rad,
-                 calibration->yaw_min_rad,
-                 calibration->yaw_max_rad);
+    return clamp(target_rad, calibration->yaw_min_rad, calibration->yaw_max_rad);
 }
 
-double jiwy_clamp_pitch_target(const JiwyCalibration *calibration,
-                               double target_rad)
+double jiwy_clamp_pitch_target(const JiwyCalibration *calibration, double target_rad)
 {
-    return clamp(target_rad,
-                 calibration->pitch_min_rad,
-                 calibration->pitch_max_rad);
+    return clamp(target_rad, calibration->pitch_min_rad, calibration->pitch_max_rad);
 }

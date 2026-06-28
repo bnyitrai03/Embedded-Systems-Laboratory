@@ -3,78 +3,43 @@
 #include <math.h>
 #include <stdint.h>
 
-static void set_yaw_inputs(TwentySimController *controller,
-                           const JiwyCalibration *calibration,
-                           EncoderSample encoders,
-                           double target_rad)
+static void set_yaw_inputs(TwentySimController *controller, const JiwyCalibration *calibration, EncoderSample encoders, double target_rad)
 {
     controller->yaw_u[0] = jiwy_clamp_yaw_target(calibration, target_rad);
     controller->yaw_u[1] = jiwy_yaw_rad(calibration, encoders.yaw);
 }
 
-static void set_pitch_inputs(TwentySimController *controller,
-                             const JiwyCalibration *calibration,
-                             EncoderSample encoders,
-                             double target_rad)
+static void set_pitch_inputs(TwentySimController *controller, const JiwyCalibration *calibration, EncoderSample encoders, double target_rad)
 {
     controller->pitch_u[0] = 0.0;
     controller->pitch_u[1] = jiwy_clamp_pitch_target(calibration, target_rad);
     controller->pitch_u[2] = jiwy_pitch_rad(calibration, encoders.pitch);
 }
 
-void twentysim_controller_init(TwentySimController *controller,
-                               double step_size_s,
-                               const JiwyCalibration *calibration,
-                               EncoderSample initial_encoders,
-                               double initial_yaw_target_rad,
-                               double initial_pitch_target_rad)
+void twentysim_controller_init(TwentySimController *controller, double step_size_s, const JiwyCalibration *calibration, EncoderSample initial_encoders, double initial_yaw_target_rad, double initial_pitch_target_rad)
 {
     yaw_step_size = step_size_s;
     pitch_step_size = step_size_s;
 
     /*
-     * Match the generated example mains: fill u/y arrays, initialize the
-     * submodels, then call CalculateSubmodel on each loop sample. The generated
-     * integrators maintain yaw_time and pitch_time globally.
+     * Fill u/y arrays, initialize the submodels, then call CalculateSubmodel on each loop sample.
      */
-    set_yaw_inputs(controller,
-                   calibration,
-                   initial_encoders,
-                   initial_yaw_target_rad);
-    set_pitch_inputs(controller,
-                     calibration,
-                     initial_encoders,
-                     initial_pitch_target_rad);
+    set_yaw_inputs(controller, calibration, initial_encoders, initial_yaw_target_rad);
+    set_pitch_inputs(controller, calibration, initial_encoders, initial_pitch_target_rad);
 
     YawInitializeSubmodel(controller->yaw_u, controller->yaw_y, 0.0);
     PitchInitializeSubmodel(controller->pitch_u, controller->pitch_y, 0.0);
 }
 
-ControllerOutput twentysim_controller_step(TwentySimController *controller,
-                                           const JiwyCalibration *calibration,
-                                           EncoderSample encoders,
-                                           double yaw_target_rad,
-                                           double pitch_target_rad)
+ControllerOutput twentysim_controller_step(TwentySimController *controller, const JiwyCalibration *calibration, EncoderSample encoders, double yaw_target_rad, double pitch_target_rad)
 {
     ControllerOutput output;
 
     set_yaw_inputs(controller, calibration, encoders, yaw_target_rad);
-    YawCalculateSubmodel(controller->yaw_u,
-                         controller->yaw_y,
-                         yaw_time);
+    YawCalculateSubmodel(controller->yaw_u, controller->yaw_y, yaw_time);
 
-    /*
-     * The generated pitch submodel still has a correction input at u[0].
-     * The wrapper intentionally keeps that hidden and fixed at zero so the
-     * application-level control target remains yaw/pitch position only.
-     */
-    set_pitch_inputs(controller,
-                     calibration,
-                     encoders,
-                     pitch_target_rad);
-    PitchCalculateSubmodel(controller->pitch_u,
-                           controller->pitch_y,
-                           pitch_time);
+    set_pitch_inputs(controller, calibration, encoders, pitch_target_rad);
+    PitchCalculateSubmodel(controller->pitch_u, controller->pitch_y, pitch_time);
 
     /* Yaw exposes {corr, out}; pitch exposes {out}. */
     output.yaw = controller->yaw_y[1];
