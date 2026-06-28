@@ -65,15 +65,7 @@ static void close_stream_fd(int *fd)
     }
 }
 
-static void set_rgb(uint8_t *rgb,
-                    int width,
-                    int height,
-                    int stride,
-                    int x,
-                    int y,
-                    uint8_t r,
-                    uint8_t g,
-                    uint8_t b)
+static void set_rgb(uint8_t *rgb, int width, int height, int stride, int x, int y, uint8_t r, uint8_t g, uint8_t b)
 {
     uint8_t *pixel;
 
@@ -87,16 +79,7 @@ static void set_rgb(uint8_t *rgb,
     pixel[2] = b;
 }
 
-static void draw_cross(uint8_t *rgb,
-                       int width,
-                       int height,
-                       int stride,
-                       int center_x,
-                       int center_y,
-                       int radius,
-                       uint8_t r,
-                       uint8_t g,
-                       uint8_t b)
+static void draw_cross(uint8_t *rgb, int width, int height, int stride, int center_x, int center_y, int radius, uint8_t r, uint8_t g, uint8_t b)
 {
     for (int d = -radius; d <= radius; ++d) {
         set_rgb(rgb, width, height, stride, center_x + d, center_y, r, g, b);
@@ -104,16 +87,7 @@ static void draw_cross(uint8_t *rgb,
     }
 }
 
-static void draw_circle(uint8_t *rgb,
-                        int width,
-                        int height,
-                        int stride,
-                        int center_x,
-                        int center_y,
-                        int radius,
-                        uint8_t r,
-                        uint8_t g,
-                        uint8_t b)
+static void draw_circle(uint8_t *rgb, int width, int height, int stride, int center_x, int center_y, int radius, uint8_t r, uint8_t g, uint8_t b)
 {
     int radius_sq = radius * radius;
     int thickness = STREAM_MAX(6, radius / 8);
@@ -209,16 +183,7 @@ static uint8_t glyph_row(char ch, int row)
     return glyph[row];
 }
 
-static void draw_text(uint8_t *rgb,
-                      int width,
-                      int height,
-                      int stride,
-                      int x,
-                      int y,
-                      const char *text,
-                      uint8_t r,
-                      uint8_t g,
-                      uint8_t b)
+static void draw_text(uint8_t *rgb, int width, int height, int stride, int x, int y, const char *text, uint8_t r, uint8_t g, uint8_t b)
 {
     const int scale = 2;
     int cursor_x = x;
@@ -232,15 +197,7 @@ static void draw_text(uint8_t *rgb,
                 }
                 for (int sy = 0; sy < scale; ++sy) {
                     for (int sx = 0; sx < scale; ++sx) {
-                        set_rgb(rgb,
-                                width,
-                                height,
-                                stride,
-                                cursor_x + col * scale + sx,
-                                y + row * scale + sy,
-                                r,
-                                g,
-                                b);
+                        set_rgb(rgb, width, height, stride, cursor_x + col * scale + sx, y + row * scale + sy, r, g, b);
                     }
                 }
             }
@@ -249,13 +206,7 @@ static void draw_text(uint8_t *rgb,
     }
 }
 
-static void annotate_stream_frame(uint8_t *annotated,
-                                  const uint8_t *rgb,
-                                  int width,
-                                  int height,
-                                  int stride,
-                                  const VisionBlobDetection *detection,
-                                  const VisionTargetSnapshot *snapshot)
+static void annotate_stream_frame(uint8_t *annotated, const uint8_t *rgb, int width, int height, int stride, const VisionBlobDetection *detection, const VisionTargetSnapshot *snapshot)
 {
     char line[96];
 
@@ -338,13 +289,7 @@ static void annotate_stream_frame(uint8_t *annotated,
     draw_text(annotated, width, height, width * 3, 8, 68, line, 255, 255, 255);
 }
 
-void vision_stream_publish_rgb(VisionStream *stream,
-                               const uint8_t *rgb,
-                               int width,
-                               int height,
-                               int stride,
-                               const VisionBlobDetection *detection,
-                               const VisionTargetSnapshot *snapshot)
+void vision_stream_publish_rgb(VisionStream *stream, const uint8_t *rgb, int width, int height, int stride, const VisionBlobDetection *detection, const VisionTargetSnapshot *snapshot)
 {
     uint32_t row_size = (uint32_t)(((width * 3) + 3) & ~3);
     size_t pixel_data_size = (size_t)row_size * (size_t)height;
@@ -368,13 +313,7 @@ void vision_stream_publish_rgb(VisionStream *stream,
         return;
     }
 
-    annotate_stream_frame(annotated,
-                          rgb,
-                          width,
-                          height,
-                          stride,
-                          detection,
-                          snapshot);
+    annotate_stream_frame(annotated, rgb, width, height, stride, detection, snapshot);
 
     memset(frame, 0, frame_size);
     frame[0] = 'B';
@@ -579,10 +518,7 @@ int vision_stream_start(VisionStream *stream, int enabled, int port)
         return 0;
     }
 
-    result = pthread_create(&stream->thread,
-                            NULL,
-                            vision_stream_thread_main,
-                            stream);
+    result = pthread_create(&stream->thread, NULL, vision_stream_thread_main, stream);
     if (result != 0) {
         stream->running = 0;
         return -result;

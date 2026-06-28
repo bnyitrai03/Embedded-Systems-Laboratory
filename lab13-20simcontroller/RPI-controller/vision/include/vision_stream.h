@@ -27,12 +27,6 @@ typedef struct {
 void vision_stream_init(VisionStream *stream);
 int vision_stream_start(VisionStream *stream, int enabled, int port);
 void vision_stream_stop(VisionStream *stream);
-void vision_stream_publish_rgb(VisionStream *stream,
-                               const uint8_t *rgb,
-                               int width,
-                               int height,
-                               int stride,
-                               const VisionBlobDetection *detection,
-                               const VisionTargetSnapshot *snapshot);
+void vision_stream_publish_rgb(VisionStream *stream, const uint8_t *rgb, int width, int height, int stride, const VisionBlobDetection *detection, const VisionTargetSnapshot *snapshot);
 
 #endif

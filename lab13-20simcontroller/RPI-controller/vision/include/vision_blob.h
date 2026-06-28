@@ -28,11 +28,6 @@ typedef struct {
 
 void vision_blob_tracker_init(VisionBlobTracker *tracker);
 void vision_blob_tracker_destroy(VisionBlobTracker *tracker);
-int vision_blob_tracker_process_rgb(VisionBlobTracker *tracker,
-                                    const uint8_t *rgb,
-                                    int width,
-                                    int height,
-                                    int stride,
-                                    VisionBlobDetection *detection);
+int vision_blob_tracker_process_rgb(VisionBlobTracker *tracker, const uint8_t *rgb, int width, int height, int stride, VisionBlobDetection *detection);
 
 #endif

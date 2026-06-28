@@ -84,25 +84,16 @@ int main(int argc, char *argv[])
      * All runtime behavior goes through MotorComm. The backend is
      * Raspberry Pi spidev, but homing and control_loop do not depend on spidev details.
      */
-    result = rpi_spi_comm_open(&spi,
-                               &comm,
-                               RPI_SPI_DEFAULT_CHANNEL,
-                               speed_hz,
-                               JIWY_SPI_DEFAULT_FLAGS);
+    result = rpi_spi_comm_open(&spi, &comm, RPI_SPI_DEFAULT_CHANNEL, speed_hz, JIWY_SPI_DEFAULT_FLAGS);
     if (result < 0) {
-        fprintf(stderr,
-                "Failed to open /dev/spidev0.%u: %s\n",
-                RPI_SPI_DEFAULT_CHANNEL,
-                strerror(-result));
+        fprintf(stderr, "Failed to open /dev/spidev0.%u: %s\n", RPI_SPI_DEFAULT_CHANNEL, strerror(-result));
         return 1;
     }
 
     printf("Starting homing over SPI channel %u at %u Hz\n", RPI_SPI_DEFAULT_CHANNEL, speed_hz);
 
     /*
-     * Homing defines software zero. Do not initialize the generated 20-sim
-     * controller before this point, because encoder feedback would still be in
-     * raw hardware coordinates.
+     * Homing defines software zero.
      */
     result = homing_run(&comm, &homing_config, &calibration, &keep_running);
     motor_comm_exchange(&comm, protocol_stop_command(), 0);
@@ -128,8 +119,7 @@ int main(int argc, char *argv[])
         ControlTarget initial_target = hold_schedule.target1;
         double controller_step_size_s = (double)control_config.sample_period_us / 1000000.0;
         /*
-         * Seed the generated controller with the first post-homing feedback
-         * sample so its initial error is consistent with the software home.
+         * Seed the generated controller with the first post-homing feedback sample so its initial error is consistent with the software home.
          */
         result = motor_comm_exchange(&comm, protocol_stop_command(), &initial_encoders);
         if (result < 0) {
@@ -143,11 +133,7 @@ int main(int argc, char *argv[])
             initial_target.pitch_target_rad = (calibration.pitch_min_rad + calibration.pitch_max_rad) / 2.0;
 
             vision_tracker_init(&vision_tracker);
-            result = vision_tracker_start(&vision_tracker,
-                                          camera_device,
-                                          vision_debug_enabled,
-                                          vision_stream_enabled,
-                                          vision_stream_port);
+            result = vision_tracker_start(&vision_tracker, camera_device, vision_debug_enabled, vision_stream_enabled, vision_stream_port);
             if (result < 0) {
                 fprintf(stderr,
                         "Failed to start vision tracker on %s: %s\n",
@@ -159,12 +145,7 @@ int main(int argc, char *argv[])
             active_vision_tracker = &vision_tracker;
         }
 
-        twentysim_controller_init(&controller,
-                                  controller_step_size_s,
-                                  &calibration,
-                                  initial_encoders,
-                                  initial_target.yaw_target_rad,
-                                  initial_target.pitch_target_rad);
+        twentysim_controller_init(&controller, controller_step_size_s, &calibration, initial_encoders, initial_target.yaw_target_rad, initial_target.pitch_target_rad);
 
         if (run_track_loop) {
             printf("Starting vision tracking control loop using %s\n", camera_device);

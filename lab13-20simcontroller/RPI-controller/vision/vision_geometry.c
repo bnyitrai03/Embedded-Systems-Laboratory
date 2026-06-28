@@ -4,12 +4,7 @@
 
 #include "jiwy_config.h"
 
-void vision_pixel_to_camera_error(double object_x,
-                                  double object_y,
-                                  int width,
-                                  int height,
-                                  double *yaw_error_rad,
-                                  double *pitch_error_rad)
+void vision_pixel_to_camera_error(double object_x, double object_y, int width, int height, double *yaw_error_rad, double *pitch_error_rad)
 {
     double center_x = (double)width / 2.0;
     double center_y = (double)height / 2.0;

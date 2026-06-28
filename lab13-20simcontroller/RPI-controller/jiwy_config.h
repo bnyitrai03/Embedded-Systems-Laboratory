@@ -4,7 +4,7 @@
 #define JIWY_PI 3.14159265358979323846
 
 /*
- * Raspberry Pi SPI backend defaults.
+ * Raspberry Pi SPI defaults.
  */
 #define JIWY_SPI_DEFAULT_SPEED_HZ 100000u
 #define JIWY_SPI_DEFAULT_CHANNEL 1u
@@ -21,7 +21,7 @@
  * @brief Maximum PWM duty value sent by the C controller.
  *
  * The FPGA PWM period is 2500 ticks at 50 MHz / 20 kHz. The controller limits
- * commands to MOTOR_PWM_MAX ticks for safer lab bring-up.
+ * commands to MOTOR_PWM_MAX ticks for lab safety.
  */
 #define MOTOR_PWM_MAX 512u
 
@@ -53,23 +53,18 @@
 #define JIWY_VISION_FRAME_RATE 30
 
 /*
- * Reject selected blobs smaller than this many green pixels. Increase this if
- * small green noise is still accepted as the ball. Decrease it if the real ball
- * is far away or partly hidden and disappears.
+ * Reject selected blobs smaller than this many green pixels.
  */
 #define JIWY_VISION_MIN_GREEN_PIXELS 100
 
 /*
- * Minimum selected blob dimensions. Increase to ignore thin reflections or
- * dots. Decrease only if the ball becomes very small in the camera image.
+ * Minimum selected blob dimensions.
  */
 #define JIWY_VISION_BLOB_MIN_WIDTH 30
 #define JIWY_VISION_BLOB_MIN_HEIGHT 30
 
 /*
- * Minimum percent of the bounding box filled by green pixels. Increase this to
- * reject sparse speckles. Decrease it if shadows/highlights make the ball mask
- * hollow or incomplete.
+ * Minimum percent of the bounding box filled by green pixels.
  */
 #define JIWY_VISION_BLOB_MIN_FILL_PERCENT 40
 
@@ -92,32 +87,22 @@
 #define JIWY_VISION_TRACK_MAX_JUMP_PIXELS 200.0
 #define JIWY_VISION_TRACK_RESET_LOST_FRAMES 10u
 /*
- * Scale camera error before creating the robot setpoint. Keep this small while
- * validating signs and FOV: 0.25 means command only 25% of the measured camera
- * angle. Increase toward 1.0 after the robot moves correctly but too slowly.
+ * Scale camera error before creating the robot setpoint.
  */
 #define JIWY_VISION_TARGET_GAIN 1.0
 
 /*
- * Maximum vision target movement per 200 Hz control sample. This turns camera
- * frame-rate target jumps into a smooth ramp for the PID. Increase if tracking
- * is too sluggish; decrease if target steps still shake the mechanism.
+ * Maximum vision target movement per control sample. This turns camera
+ * frame-rate target jumps into a smooth ramp for the PID.
  */
 #define JIWY_VISION_TARGET_SLEW_RAD_PER_SAMPLE 0.01
 
-/*
- * Logitech C270 is commonly advertised as 60 deg diagonal. For a 4:3 640x480
- * frame, that corresponds to about 49.6 deg horizontal and 39.7 deg vertical.
- * Increase these if the robot under-rotates for a measured pixel offset.
- * Decrease them if it over-rotates.
- */
 #define JIWY_VISION_HORIZONTAL_FOV_RAD (40.0 * JIWY_PI / 180.0)
 #define JIWY_VISION_VERTICAL_FOV_RAD   (30.0 * JIWY_PI / 180.0)
 
 /*
  * Camera-error deadband. Errors smaller than this become zero so the robot does
- * not twitch when the ball is visually centered. Increase if it still hunts at
- * center. Decrease if it stops before the ball is centered accurately enough.
+ * not twitch when the ball is visually centered.
  */
 #define JIWY_VISION_YAW_DEADBAND_RAD   0.0
 #define JIWY_VISION_PITCH_DEADBAND_RAD 0.06
@@ -144,27 +129,22 @@
 /*
  * Pixel-level green threshold.
  *
- * GREEN_MIN_CHANNEL: minimum dominant green channel. Increase to ignore dark
- * pixels. Decrease if the ball is detected poorly in dim light.
- *
+ * GREEN_MIN_CHANNEL: minimum dominant green channel.
  * GREEN_MIN_DELTA: minimum separation between strongest and weakest RGB
- * channels. Increase to reject gray/white glare. Decrease if real green pixels
- * are muted by lighting or camera exposure.
+ * channels.
  */
 #define JIWY_VISION_GREEN_MIN_CHANNEL 20
 #define JIWY_VISION_GREEN_MIN_DELTA 35
 
 /*
  * Whiteness is min(R,G,B) as percent of 255. Low values allow saturated colors;
- * high values allow pale glare. Keep min at 0 for the lab ball unless black
- * background noise starts matching.
+ * high values allow pale glare.
  */
 #define JIWY_VISION_GREEN_MIN_WHITENESS_PERCENT 0
 #define JIWY_VISION_GREEN_MAX_WHITENESS_PERCENT 60
 
 /*
- * Blackness is (255 - max(R,G,B)) as percent of 255. Raising the max allows
- * darker green pixels, useful under shadows. Lower it if dark noise is accepted.
+ * Blackness is (255 - max(R,G,B)) as percent of 255.
  */
 #define JIWY_VISION_GREEN_MIN_BLACKNESS_PERCENT 0
 #define JIWY_VISION_GREEN_MAX_BLACKNESS_PERCENT 95
@@ -172,8 +152,7 @@
 #define JIWY_VISION_STREAM_BOUNDARY "jiwyframe"
 
 /*
- * Hue window in degrees around green. Widen if the ball changes color with
- * lighting; narrow if yellow/cyan background objects are selected.
+ * Hue window in degrees around green.
  */
 #define HUE_LOWER_LIMIT 100
 #define HUE_UPPER_LIMIT 180

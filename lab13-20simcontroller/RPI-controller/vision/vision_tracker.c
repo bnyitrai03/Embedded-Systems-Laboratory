@@ -28,8 +28,7 @@ static long timespec_diff_us(struct timespec end, struct timespec start)
     return (long)sec * 1000000L + nsec / 1000L;
 }
 
-static void update_snapshot(VisionTracker *tracker,
-                            const VisionTargetSnapshot *snapshot)
+static void update_snapshot(VisionTracker *tracker, const VisionTargetSnapshot *snapshot)
 {
     pthread_mutex_lock(&tracker->lock);
     tracker->latest = *snapshot;
@@ -47,15 +46,12 @@ static void publish_start_result(VisionTracker *tracker, int result)
 
 /* ---- frame processing helpers (called from on_new_sample) ---- */
 
-static int acquire_frame_buffer(GstSample *sample,
-                                GstBuffer **buffer_out,
-                                GstVideoInfo *info)
+static int acquire_frame_buffer(GstSample *sample, GstBuffer **buffer_out, GstVideoInfo *info)
 {
     GstBuffer *buffer = gst_sample_get_buffer(sample);
     GstCaps *caps = gst_sample_get_caps(sample);
 
-    if (buffer == NULL || caps == NULL ||
-        !gst_video_info_from_caps(info, caps)) {
+    if (buffer == NULL || caps == NULL || !gst_video_info_from_caps(info, caps)) {
         return -1;
     }
     if (GST_VIDEO_INFO_FORMAT(info) != GST_VIDEO_FORMAT_RGB) {
@@ -68,17 +64,13 @@ static int acquire_frame_buffer(GstSample *sample,
     return 0;
 }
 
-static int compute_frame_geometry(const GstVideoInfo *info,
-                                  int *width_out,
-                                  int *height_out,
-                                  int *stride_out)
+static int compute_frame_geometry(const GstVideoInfo *info, int *width_out, int *height_out, int *stride_out)
 {
     int width = GST_VIDEO_INFO_WIDTH(info);
     int height = GST_VIDEO_INFO_HEIGHT(info);
     int stride = GST_VIDEO_INFO_PLANE_STRIDE(info, 0);
 
-    if (width <= 0 || height <= 0 ||
-        (size_t)height > (size_t)INT_MAX / (size_t)width) {
+    if (width <= 0 || height <= 0 || (size_t)height > (size_t)INT_MAX / (size_t)width) {
         fprintf(stderr, "Vision tracker got invalid frame dimensions\n");
         return -1;
     }
@@ -91,30 +83,20 @@ static int compute_frame_geometry(const GstVideoInfo *info,
     return 0;
 }
 
-static int map_buffer_for_read(GstBuffer *buffer,
-                               GstMapInfo *map,
-                               int width,
-                               int height,
-                               int stride)
+static int map_buffer_for_read(GstBuffer *buffer, GstMapInfo *map, int width, int height, int stride)
 {
     if (!gst_buffer_map(buffer, map, GST_MAP_READ)) {
         return -1;
     }
     if (map->size < (gsize)((height - 1) * stride + width * 3)) {
-        fprintf(stderr,
-                "Vision tracker frame buffer is smaller than expected\n");
+        fprintf(stderr, "Vision tracker frame buffer is smaller than expected\n");
         gst_buffer_unmap(buffer, map);
         return -1;
     }
     return 0;
 }
 
-static int build_snapshot(VisionPipelineData *data,
-                          const VisionBlobDetection *detection,
-                          int width,
-                          int height,
-                          const struct timespec *frame_start,
-                          VisionTargetSnapshot *snapshot)
+static int build_snapshot(VisionPipelineData *data, const VisionBlobDetection *detection, int width, int height, const struct timespec *frame_start, VisionTargetSnapshot *snapshot)
 {
     const double nominal_frame_ms = 1000.0 / (double)JIWY_VISION_FRAME_RATE;
     double frame_interval_ms = 0.0;
@@ -123,38 +105,26 @@ static int build_snapshot(VisionPipelineData *data,
     memset(snapshot, 0, sizeof(*snapshot));
     snapshot->frame_count = data->frame_count;
     if (data->have_last_frame_time) {
-        frame_interval_ms =
-            (double)timespec_diff_us(*frame_start, data->last_frame_time) /
-            1000.0;
+        frame_interval_ms = (double)timespec_diff_us(*frame_start, data->last_frame_time) / 1000.0;
     }
     snapshot->frame_interval_ms = frame_interval_ms;
 
     if (detection->valid) {
         snapshot->valid = 1;
-        vision_pixel_to_camera_error(detection->object_x,
-                                     detection->object_y,
-                                     width,
-                                     height,
-                                     &snapshot->yaw_error_rad,
-                                     &snapshot->pitch_error_rad);
+        vision_pixel_to_camera_error(detection->object_x, detection->object_y, width, height, &snapshot->yaw_error_rad, &snapshot->pitch_error_rad);
     }
 
     if (clock_gettime(CLOCK_MONOTONIC, &frame_end) < 0) {
         return -1;
     }
     snapshot->process_us = (double)timespec_diff_us(frame_end, *frame_start);
-    snapshot->late_frame =
-        data->have_last_frame_time &&
-        frame_interval_ms >
-            nominal_frame_ms * JIWY_VISION_LATE_FRAME_THRESHOLD_PCT / 100.0;
+    snapshot->late_frame = data->have_last_frame_time && frame_interval_ms > nominal_frame_ms * JIWY_VISION_LATE_FRAME_THRESHOLD_PCT / 100.0;
     data->last_frame_time = *frame_start;
     data->have_last_frame_time = 1;
     return 0;
 }
 
-static void publish_debug_frame(const VisionPipelineData *data,
-                                const VisionBlobDetection *detection,
-                                const VisionTargetSnapshot *snapshot)
+static void publish_debug_frame(const VisionPipelineData *data, const VisionBlobDetection *detection, const VisionTargetSnapshot *snapshot)
 {
     if (snapshot->valid) {
         printf("vision frame=%" G_GUINT64_FORMAT
@@ -220,17 +190,11 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
     }
     mapped = 1;
 
-    if (vision_blob_tracker_process_rgb(&data->blob_tracker,
-                                         map.data,
-                                         width,
-                                         height,
-                                         stride,
-                                         &detection) < 0) {
+    if (vision_blob_tracker_process_rgb(&data->blob_tracker, map.data, width, height, stride, &detection) < 0) {
         goto cleanup;
     }
 
-    if (build_snapshot(data, &detection, width, height,
-                       &frame_start, &snapshot) < 0) {
+    if (build_snapshot(data, &detection, width, height, &frame_start, &snapshot) < 0) {
         goto cleanup;
     }
 
@@ -238,13 +202,7 @@ static GstFlowReturn on_new_sample(GstAppSink *appsink, gpointer user_data)
 
     if (tracker->stream.enabled &&
         data->frame_count % JIWY_VISION_STREAM_FPS_DIVISOR == 0) {
-        vision_stream_publish_rgb(&tracker->stream,
-                                  map.data,
-                                  width,
-                                  height,
-                                  stride,
-                                  &detection,
-                                  &snapshot);
+        vision_stream_publish_rgb(&tracker->stream, map.data, width, height, stride, &detection, &snapshot);
     }
 
     if (tracker->debug_enabled &&
@@ -265,9 +223,7 @@ cleanup:
     return result;
 }
 
-static gboolean on_bus_message(GstBus *bus,
-                               GstMessage *message,
-                               gpointer user_data)
+static gboolean on_bus_message(GstBus *bus, GstMessage *message, gpointer user_data)
 {
     VisionPipelineData *data = (VisionPipelineData *)user_data;
 
@@ -300,10 +256,9 @@ static gboolean on_bus_message(GstBus *bus,
     return TRUE;
 }
 
-/* ---- pipeline construction / lifecycle helpers ---- */
+/* ---- pipeline construction helpers ---- */
 
-static void prepare_pipeline_data(VisionPipelineData *data,
-                                  VisionTracker *tracker)
+static void prepare_pipeline_data(VisionPipelineData *data, VisionTracker *tracker)
 {
     memset(data, 0, sizeof(*data));
     data->tracker = tracker;
@@ -323,23 +278,17 @@ static GstCaps *create_rgb_caps(void)
 
 static void configure_sink(GstElement *sink, VisionPipelineData *data)
 {
-    g_object_set(sink,
-                 "emit-signals", TRUE,
-                 "sync", FALSE,
-                 "max-buffers", 1,
-                 "drop", TRUE,
-                 NULL);
+    g_object_set(sink, "emit-signals", TRUE, "sync", FALSE, "max-buffers", 1, "drop", TRUE, NULL);
     g_signal_connect(sink, "new-sample", G_CALLBACK(on_new_sample), data);
 }
 
 /* Runs the built pipeline to completion: bus watch, PLAYING, ready check,
- * main loop, and full teardown. tracker->pipeline must already be set on
+ * main loop, and teardown. tracker->pipeline must already be set on
  * entry; on return tracker->pipeline and tracker->loop are NULL and the
- * pipeline has been unref'd. The blob tracker is left for the caller to
- * destroy. Publishes the start result to the waiting controller thread.
+ * pipeline has been unreferenced. The blob tracker is destroyed by the caller.
+ * Publishes the start result to the waiting controller thread.
  */
-static void run_pipeline_until_quit(VisionTracker *tracker,
-                                    VisionPipelineData *data)
+static void run_pipeline_until_quit(VisionTracker *tracker, VisionPipelineData *data)
 {
     GstElement *pipeline = tracker->pipeline;
     GstBus *bus;
@@ -365,14 +314,9 @@ static void run_pipeline_until_quit(VisionTracker *tracker,
         return;
     }
 
-    ready_result = gst_element_get_state(pipeline,
-                                         NULL,
-                                         NULL,
-                                         JIWY_VISION_PIPELINE_READY_TIMEOUT_S *
-                                             GST_SECOND);
+    ready_result = gst_element_get_state(pipeline, NULL, NULL, JIWY_VISION_PIPELINE_READY_TIMEOUT_S * GST_SECOND);
     if (ready_result == GST_STATE_CHANGE_FAILURE) {
-        fprintf(stderr,
-                "Vision tracker camera pipeline did not reach PLAYING\n");
+        fprintf(stderr, "Vision tracker camera pipeline did not reach PLAYING\n");
         gst_element_set_state(pipeline, GST_STATE_NULL);
         g_source_remove(bus_watch_id);
         g_main_loop_unref(tracker->loop);
@@ -394,7 +338,7 @@ static void run_pipeline_until_quit(VisionTracker *tracker,
     tracker->pipeline = NULL;
 }
 
-/* ---- platform-specific thread entry points ---- */
+/* ---- platform specific thread entry points ---- */
 
 #ifndef JIWY_VISION_USE_AVFVIDEOSRC
 static void *vision_thread_main_v4l2(void *arg)
@@ -424,9 +368,7 @@ static void *vision_thread_main_v4l2(void *arg)
     rgb_capsfilter = gst_element_factory_make("capsfilter", "rgb-caps");
     sink = gst_element_factory_make("appsink", "sink");
 
-    if (pipeline == NULL || source == NULL || source_capsfilter == NULL ||
-        jpegdec == NULL || convert == NULL || scale == NULL ||
-        rgb_capsfilter == NULL || sink == NULL) {
+    if (pipeline == NULL || source == NULL || source_capsfilter == NULL || jpegdec == NULL || convert == NULL || scale == NULL || rgb_capsfilter == NULL || sink == NULL) {
         fprintf(stderr, "Vision tracker could not create GStreamer elements\n");
         if (pipeline != NULL) {
             gst_object_unref(pipeline);
@@ -436,12 +378,7 @@ static void *vision_thread_main_v4l2(void *arg)
     }
 
     g_object_set(source, "device", tracker->camera_device, NULL);
-    source_caps = gst_caps_new_simple("image/jpeg",
-                                      "width", G_TYPE_INT, JIWY_VISION_FRAME_WIDTH,
-                                      "height", G_TYPE_INT, JIWY_VISION_FRAME_HEIGHT,
-                                      "framerate", GST_TYPE_FRACTION,
-                                      JIWY_VISION_FRAME_RATE, 1,
-                                      NULL);
+    source_caps = gst_caps_new_simple("image/jpeg", "width", G_TYPE_INT, JIWY_VISION_FRAME_WIDTH, "height", G_TYPE_INT, JIWY_VISION_FRAME_HEIGHT, "framerate", GST_TYPE_FRACTION, JIWY_VISION_FRAME_RATE, 1, NULL);
     g_object_set(source_capsfilter, "caps", source_caps, NULL);
     gst_caps_unref(source_caps);
 
@@ -451,26 +388,10 @@ static void *vision_thread_main_v4l2(void *arg)
 
     configure_sink(sink, &data);
 
-    gst_bin_add_many(GST_BIN(pipeline),
-                     source,
-                     source_capsfilter,
-                     jpegdec,
-                     convert,
-                     scale,
-                     rgb_capsfilter,
-                     sink,
-                     NULL);
+    gst_bin_add_many(GST_BIN(pipeline), source, source_capsfilter, jpegdec, convert, scale, rgb_capsfilter, sink, NULL);
 
-    if (!gst_element_link_many(source,
-                               source_capsfilter,
-                               jpegdec,
-                               convert,
-                               scale,
-                               rgb_capsfilter,
-                               sink,
-                               NULL)) {
-        fprintf(stderr,
-                "Vision tracker could not link MJPEG camera pipeline\n");
+    if (!gst_element_link_many(source, source_capsfilter, jpegdec, convert, scale, rgb_capsfilter, sink, NULL)) {
+        fprintf(stderr, "Vision tracker could not link MJPEG camera pipeline\n");
         gst_object_unref(pipeline);
         publish_start_result(tracker, -EINVAL);
         return NULL;
@@ -593,11 +514,7 @@ void vision_tracker_init(VisionTracker *tracker)
     vision_stream_init(&tracker->stream);
 }
 
-int vision_tracker_start(VisionTracker *tracker,
-                         const char *camera_device,
-                         int debug_enabled,
-                         int stream_enabled,
-                         int stream_port)
+int vision_tracker_start(VisionTracker *tracker, const char *camera_device, int debug_enabled, int stream_enabled, int stream_port)
 {
     int result;
 
@@ -605,23 +522,17 @@ int vision_tracker_start(VisionTracker *tracker,
         return -EINVAL;
     }
 
-    tracker->camera_device =
-        camera_device != NULL ? camera_device : JIWY_VISION_DEFAULT_CAMERA;
+    tracker->camera_device = camera_device != NULL ? camera_device : JIWY_VISION_DEFAULT_CAMERA;
     tracker->debug_enabled = debug_enabled;
     tracker->start_done = 0;
     tracker->start_result = 0;
 
-    result = vision_stream_start(&tracker->stream,
-                                 stream_enabled,
-                                 stream_port);
+    result = vision_stream_start(&tracker->stream, stream_enabled, stream_port);
     if (result < 0) {
         return result;
     }
 
-    result = pthread_create(&tracker->thread,
-                            NULL,
-                            vision_thread_main,
-                            tracker);
+    result = pthread_create(&tracker->thread, NULL, vision_thread_main, tracker);
     if (result != 0) {
         vision_stream_stop(&tracker->stream);
         return -result;
@@ -660,8 +571,7 @@ void vision_tracker_stop(VisionTracker *tracker)
     vision_stream_stop(&tracker->stream);
 }
 
-int vision_tracker_read_latest(VisionTracker *tracker,
-                               VisionTargetSnapshot *snapshot)
+int vision_tracker_read_latest(VisionTracker *tracker, VisionTargetSnapshot *snapshot)
 {
     if (tracker == NULL || snapshot == NULL) {
         return -EINVAL;

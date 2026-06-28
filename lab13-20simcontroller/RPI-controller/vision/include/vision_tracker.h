@@ -9,11 +9,8 @@ typedef struct _GMainLoop GMainLoop;
 typedef struct _GstElement GstElement;
 
 /**
- * @file vision_tracker.h
- * @brief Lightweight green-object tracker for live yaw/pitch target updates.
- *
  * The tracker runs the GStreamer camera pipeline on a separate thread. The
- * control loop reads a small mutex-protected snapshot containing the latest
+ * control loop reads a small mutex protected snapshot containing the latest
  * angular error between the camera centerline and the green object centroid.
  */
 
@@ -26,11 +23,11 @@ typedef struct VisionTargetSnapshot {
     double pitch_error_rad;
     /** Camera frame number associated with this snapshot. */
     uint64_t frame_count;
-    /** Milliseconds since the previous processed frame, or 0 for the first. */
+    /** Milliseconds since the previous processed frame. */
     double frame_interval_ms;
     /** Microseconds spent processing this frame. */
     double process_us;
-    /** Non-zero when the frame interval is unusually late. */
+    /** Non-zero when the frame interval is late. */
     int late_frame;
 } VisionTargetSnapshot;
 
@@ -60,15 +57,11 @@ void vision_tracker_init(VisionTracker *tracker);
 /**
  * @brief Start the MJPEG camera tracker thread.
  *
- * @param camera_device V4L2 device path, or NULL for the configured default.
- * @param debug_enabled Non-zero prints low-rate camera diagnostics.
- * @return 0 on successful thread/pipeline start, negative errno-style value.
+ * @param camera_device V4L2 device path.
+ * @param debug_enabled Non-zero enables camera diagnostics.
+ * @return errno-style value.
  */
-int vision_tracker_start(VisionTracker *tracker,
-                         const char *camera_device,
-                         int debug_enabled,
-                         int stream_enabled,
-                         int stream_port);
+int vision_tracker_start(VisionTracker *tracker, const char *camera_device, int debug_enabled, int stream_enabled, int stream_port);
 
 /**
  * @brief Stop the camera thread and release GStreamer resources.
@@ -77,10 +70,7 @@ void vision_tracker_stop(VisionTracker *tracker);
 
 /**
  * @brief Copy the latest camera target snapshot.
- *
- * @return 0 on success or -EINVAL for invalid arguments.
  */
-int vision_tracker_read_latest(VisionTracker *tracker,
-                               VisionTargetSnapshot *snapshot);
+int vision_tracker_read_latest(VisionTracker *tracker, VisionTargetSnapshot *snapshot);
 
 #endif
