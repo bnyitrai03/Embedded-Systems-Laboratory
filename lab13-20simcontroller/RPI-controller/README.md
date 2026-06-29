@@ -1,3 +1,29 @@
+# Programming the FPGA
+
+Run the FPGA build, place-and-route, bitstream packing, and programming flow with:
+
+```sh
+./scripts/program_ice40.sh
+```
+
+The script synthesizes `TopEntity`, programs the ICE40 through `icoprog`, rebuilds
+the Raspberry Pi controller, and leaves the controller stopped.
+
+If your `icoprog` checkout is not in `~/ws/icoprog`, set `ICOPROG_DIR` first:
+
+```sh
+ICOPROG_DIR=/path/to/icoprog ./scripts/program_ice40.sh
+```
+
+Run the Verilog testbench with:
+
+```sh
+./scripts/run_verilog_tb.sh
+```
+
+This compiles `TopEntity_tb.v`, runs the simulation, and opens `gtkwave`.
+
+
 # Building and running the RPI demo
 
 Build on the Raspberry Pi with Make:
@@ -57,4 +83,10 @@ Plot after the run:
 
 ```bash
 python scripts/plot_pid_log.py pid_log.csv
+```
+
+Copy the newest CSV log from the Raspberry Pi and open the plots:
+
+```bash
+./scripts/fetch_pi_csv.sh
 ```
